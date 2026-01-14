@@ -36,9 +36,15 @@ export function AddressAutocomplete({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const justSelected = useRef(false);
 
   // Fetch suggestions from API
   useEffect(() => {
+    if (justSelected.current) {
+      justSelected.current = false;
+      return;
+    }
+
     if (!value || value.length < 3) {
       setSuggestions([]);
       setIsOpen(false);
@@ -52,6 +58,11 @@ export function AddressAutocomplete({
           `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(value)}&limit=5`
         );
         const data = await response.json();
+
+        if (!data.features) {
+          setSuggestions([]);
+          return;
+        }
 
         const results: AddressSuggestion[] = data.features.map((feature: {
           properties: {
@@ -103,6 +114,7 @@ export function AddressAutocomplete({
   }, []);
 
   const handleSelect = (suggestion: AddressSuggestion) => {
+    justSelected.current = true;
     onChange(suggestion.label);
     onSelect?.(suggestion);
     setIsOpen(false);

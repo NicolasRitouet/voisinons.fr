@@ -7,6 +7,7 @@ import { PartyInfo } from "@/components/party/party-info";
 import { ParticipantsList } from "@/components/party/participants-list";
 import { JoinPartyButton } from "@/components/party/join-party-button";
 import { PartyUpdates } from "@/components/party/party-updates";
+import { AdminEditButton } from "@/components/party/admin-edit-button";
 
 // Force dynamic rendering (requires DB access)
 export const dynamic = "force-dynamic";
@@ -57,6 +58,7 @@ export default async function PartyPage({ params }: PartyPageProps) {
 
   return (
     <main className="min-h-screen bg-neighbor-cream">
+      <AdminEditButton slug={slug} />
       <PartyHeader party={party} coverImage={coverImage} />
 
       <div className="max-w-4xl mx-auto px-4 py-8">

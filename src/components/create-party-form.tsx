@@ -39,6 +39,7 @@ import {
   generatePartyNameFromAddress,
 } from "@/lib/validations/party";
 import { createParty, checkSlugAvailability } from "@/lib/actions/party";
+import { saveAdminParty } from "@/lib/storage/admin-parties";
 
 export function CreatePartyForm() {
   const router = useRouter();
@@ -122,6 +123,7 @@ export function CreatePartyForm() {
       const result = await createParty(data);
 
       if (result.success) {
+        saveAdminParty(result.party.slug, result.party.adminToken);
         setSuccessData(result.party);
       } else {
         // Set form errors
