@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voisinons.fr | Organisez votre Fête des Voisins simplement</title>
+    
+    <!-- Scripts & Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/phosphor-icons"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Outfit:wght@300;400;500;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neighbor-cream': '#F9F8F2',
+                        'neighbor-dark': '#1e201f',
+                        'neighbor-orange': '#EB5E28',
+                        'neighbor-green': '#2A9D8F',
+                        'neighbor-yellow': '#E9C46A',
+                        'neighbor-stone': '#264653',
+                        'neighbor-blue': '#457B9D',
+                    },
+                    fontFamily: {
+                        heading: ['"Space Grotesk"', 'sans-serif'],
+                        body: ['"Outfit"', 'sans-serif'],
+                        hand: ['"Gloria Hallelujah"', 'cursive'],
+                    },
+                    backgroundImage: {
+                        'noise': "url('data:image/svg+xml,%3Csvg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cfilter id=\"noiseFilter\"%3E%3CfeTurbulence type=\"fractalNoise\" baseFrequency=\"0.65\" numOctaves=\"3\" stitchTiles=\"stitch\"/%3E%3C/filter%3E%3Crect width=\"100%25\" height=\"100%25\" filter=\"url(%23noiseFilter)\" opacity=\"0.05\"/%3E%3C/svg%3E')",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles & Animation */
+        body {
+            background-color: #F9F8F2;
+            color: #1e201f;
+        }
+        
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.04"/%3E%3C/svg%3E');
+        }
+
+        .text-outline {
+            -webkit-text-stroke: 1px #1e201f;
+            color: transparent;
+        }
+
+        .poster-card {
+            background: white;
+            box-shadow: 
+                0 1px 1px rgba(0,0,0,0.11), 
+                0 2px 2px rgba(0,0,0,0.11), 
+                0 4px 4px rgba(0,0,0,0.11), 
+                0 8px 8px rgba(0,0,0,0.11), 
+                0 16px 16px rgba(0,0,0,0.11), 
+                0 32px 32px rgba(0,0,0,0.11);
+            transform: rotate(-2deg);
+            transition: all 0.5s ease;
+        }
+
+        .poster-card:hover {
+            transform: rotate(0deg) scale(1.02);
+            box-shadow: 
+                0 2px 1px rgba(0,0,0,0.09), 
+                0 4px 2px rgba(0,0,0,0.09), 
+                0 8px 4px rgba(0,0,0,0.09), 
+                0 16px 8px rgba(0,0,0,0.09), 
+                0 32px 16px rgba(0,0,0,0.09);
+        }
+
+        .tape-effect {
+            position: absolute;
+            width: 120px;
+            height: 35px;
+            background-color: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(2px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%) rotate(1deg);
+            z-index: 10;
+            opacity: 0.8;
+            border-left: 1px solid rgba(255,255,255,0.3);
+            border-right: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .blob-bg {
+            position: absolute;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .hand-circle {
+            position: relative;
+        }
+        .hand-circle::after {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            border: 2px solid #EB5E28;
+            border-radius: 90% 60% 70% 40% / 40% 70% 30% 90%;
+            transform: rotate(-10deg);
+            pointer-events: none;
+        }
+        
+        /* Reveal animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: revealAnim 0.8s cubic-bezier(0.5, 0, 0, 1) forwards;
+        }
+        
+        @keyframes revealAnim {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="relative overflow-x-hidden antialiased selection:bg-neighbor-orange selection:text-white">
+
+    <!-- Noise Texture Overlay -->
+    <div class="noise-overlay"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-40 px-4 py-4 md:py-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 border border-white/40 shadow-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-neighbor-orange rounded-full flex items-center justify-center text-white font-bold">V</div>
+                <span class="font-heading font-bold text-xl tracking-tight text-neighbor-stone">voisinons<span class="text-neighbor-orange">.fr</span></span>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-8 font-body font-medium text-sm text-gray-600">
+                <a href="#comment-ca-marche" class="hover:text-neighbor-orange transition-colors" rel="nofollow">Comment ça marche ?</a>
+                <a href="#features" class="hover:text-neighbor-orange transition-colors" rel="nofollow">Fonctionnalités</a>
+                <a href="#rgpd" class="hover:text-neighbor-orange transition-colors" rel="nofollow">Confidentialité</a>
+            </div>
+
+            <a href="#creer" class="bg-neighbor-stone text-white px-5 py-2 rounded-full font-body font-bold text-sm hover:bg-neighbor-orange transition-colors duration-300 shadow-lg shadow-neighbor-stone/20" rel="nofollow">
+                Créer une fête
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 overflow-hidden">
+        <!-- Blobs -->
+        <div class="blob-bg bg-neighbor-yellow/40 w-96 h-96 rounded-full top-0 -left-20"></div>
+        <div class="blob-bg bg-neighbor-orange/20 w-[30rem] h-[30rem] rounded-full bottom-0 -right-40"></div>
+
+        <div class="max-w-6xl mx-auto text-center relative z-10">
+            <!-- Social Proof Pill -->
+            <div class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-1 mb-8 shadow-sm reveal">
+                <span class="flex -space-x-2">
+                    <img class="w-6 h-6 rounded-full border border-white object-cover" src="https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=100&h=100&auto=format&fit=crop" alt="User">
+                    <img class="w-6 h-6 rounded-full border border-white object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&auto=format&fit=crop" alt="User">
+                    <img class="w-6 h-6 rounded-full border border-white object-cover" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&auto=format&fit=crop" alt="User">
+                </span>
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wide pr-1">Déjà 120+ fêtes organisées</span>
+            </div>
+
+            <h1 class="font-heading font-bold text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tighter text-neighbor-stone mb-8 reveal delay-100">
+                Faites vibrer <br>
+                votre <span class="relative inline-block text-neighbor-orange italic pr-4">
+                    quartier
+                    <svg class="absolute w-full h-3 -bottom-1 left-0 text-neighbor-yellow z-[-1]" viewBox="0 0 100 10" preserveAspectRatio="none">
+                        <path d="M0 5 Q 50 10 100 5" stroke="currentColor" stroke-width="8" fill="none" />
+                    </svg>
+                </span>!
+            </h1>
+
+            <p class="font-body text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed reveal delay-200">
+                L'outil gratuit pour organiser la parfaite <span class="font-bold text-neighbor-stone">Fête des Voisins</span>. Générez vos affiches, coordonnez les plats, et trouvez de l'aide pour vos démarches administratives.
+            </p>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 reveal delay-300">
+                <div class="relative group w-full max-w-md">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-neighbor-yellow to-neighbor-orange rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                    <div class="relative flex bg-white rounded-full p-1.5 shadow-xl ring-1 ring-gray-900/5 items-center">
+                        <span class="pl-4 text-gray-400 font-heading font-medium">voisinons.fr/</span>
+                        <input type="text" placeholder="rue-de-la-paix" class="flex-1 border-0 bg-transparent py-3 pl-1 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6 outline-none font-bold">
+                        <button class="bg-neighbor-stone text-white rounded-full px-6 py-3 font-bold text-sm tracking-wide hover:bg-neighbor-dark transition-all">
+                            C'est parti
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="mt-4 text-sm text-gray-400 font-body reveal delay-300">100% Gratuit • Respectueux RGPD • Génération d'affiche instantanée</p>
+        </div>
+    </header>
+
+    <!-- Marquee -->
+    <div class="bg-neighbor-stone py-4 transform -rotate-1 border-y-4 border-neighbor-orange">
+        <div class="marquee-container font-heading font-bold text-2xl text-neighbor-yellow tracking-wider opacity-90 uppercase">
+            <div class="marquee-content">
+                ★ Plus qu'une fête ★ Rencontrez ceux qui vivent à côté ★ Partagez un repas ★ Créez des liens ★ Convivialité Locale ★ Plus qu'une fête ★ Rencontrez ceux qui vivent à côté ★ Partagez un repas ★ Créez des liens ★ Convivialité Locale
+            </div>
+        </div>
+    </div>
+
+    <!-- How it works (Bento Grid Style) -->
+    <section id="comment-ca-marche" class="py-24 px-4 bg-white relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <span class="font-hand text-neighbor-orange text-xl font-bold rotate-2 inline-block mb-2">C'est simple comme bonjour</span>
+                <h2 class="font-heading font-bold text-4xl md:text-5xl text-neighbor-stone">Tout pour organiser sans stress</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(0,auto)]">
+                
+                <!-- Card 1: Create Space -->
+                <div class="bg-neighbor-cream rounded-3xl p-8 border border-stone-100 flex flex-col justify-between group hover:border-neighbor-yellow transition-all duration-300 min-h-[400px]">
+                    <div>
+                        <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm border border-stone-100">
+                            🔗
+                        </div>
+                        <h3 class="font-heading font-bold text-2xl text-neighbor-stone mb-2">1. Créez votre espace</h3>
+                        <p class="font-body text-gray-600">Obtenez une URL unique (ex: <em class="bg-yellow-200 px-1">voisinons.fr/residence-bleue</em>) pour centraliser toutes les infos de votre fête.</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 translate-y-4 group-hover:translate-y-2 transition-transform">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs">✅</div>
+                            <div class="text-sm font-bold text-gray-800">Page créée avec succès !</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Poster Generator (Main Focus) -->
+                <div class="md:col-span-2 bg-neighbor-stone rounded-3xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-10 text-white min-h-[400px]">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-neighbor-orange rounded-full filter blur-[80px] opacity-30"></div>
+                    
+                    <div class="flex-1 z-10">
+                        <h3 class="font-heading font-bold text-3xl mb-4">2. Une affiche prête à imprimer</h3>
+                        <p class="font-body text-gray-300 text-lg mb-6">Fini le feutre. Nous générons automatiquement une affiche magnifique avec un QR Code unique pour votre hall d'immeuble.</p>
+                        <div class="flex gap-2 font-hand text-neighbor-yellow">
+                            <span>✨ Magique</span>
+                            <span>•</span>
+                            <span>🖨️ PDF HD</span>
+                        </div>
+                    </div>
+
+                    <!-- The Poster Visual -->
+                    <div class="relative w-48 md:w-56 flex-shrink-0 perspective-1000">
+                        <div class="poster-card w-full aspect-[1/1.4] bg-white p-3 flex flex-col items-center text-center">
+                            <div class="tape-effect"></div>
+                            <div class="w-full h-full border-2 border-stone-900 p-2 flex flex-col">
+                                <h4 class="font-heading font-bold text-stone-900 text-xl leading-none mt-2">FÊTE<br>DES<br>VOISINS</h4>
+                                <div class="my-auto">
+                                    <div class="text-[10px] font-bold text-neighbor-orange uppercase">Vendredi 24 Mai</div>
+                                    <div class="text-[8px] text-gray-500 mt-1">Cour intérieure</div>
+                                    <div class="w-16 h-16 bg-black mx-auto mt-2"></div> <!-- Fake QR -->
+                                </div>
+                                <div class="text-[8px] font-bold mt-auto mb-1">Scannez pour participer</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Logistics -->
+                <div class="md:col-span-2 bg-neighbor-green/10 rounded-3xl p-8 md:p-12 border border-neighbor-green/20 flex flex-col md:flex-row items-center justify-between gap-8 min-h-[360px]">
+                     <div class="flex-1">
+                        <h3 class="font-heading font-bold text-2xl text-neighbor-stone mb-2">3. "Qui ramène les chips ?"</h3>
+                        <p class="font-body text-gray-600 mb-4">Plus de doublons. Chaque voisin indique ce qu'il apporte (boissons, plats, chaises). Les organisateurs ont une vue d'ensemble claire.</p>
+                        <ul class="space-y-2">
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <i class="fas fa-check text-neighbor-green"></i> Chat & Annonces en direct
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <i class="fas fa-check text-neighbor-green"></i> Liste des participants
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- UI Snippet -->
+                    <div class="w-full max-w-xs bg-white rounded-xl shadow-lg border border-gray-100 p-4 font-body text-sm rotate-1">
+                        <div class="flex justify-between items-center mb-3 border-b pb-2">
+                            <span class="font-bold text-gray-800">Liste des courses</span>
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">En cours</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">J</div>
+                                <span class="text-gray-600">Jules apporte <span class="font-bold text-gray-800">Quiche</span></span>
+                            </div>
+                            <div class="flex items-center gap-2 opacity-50">
+                                <div class="w-6 h-6 border rounded-full text-gray-400 flex items-center justify-center text-xs">+</div>
+                                <span class="text-gray-400 italic">Ajouter un item...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Administrative Help (New) -->
+                <div class="bg-neighbor-blue/10 rounded-3xl p-8 border border-neighbor-blue/20 flex flex-col min-h-[360px]">
+                    <div class="w-12 h-12 bg-white text-neighbor-blue rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
+                        🏛️
+                    </div>
+                    <h3 class="font-heading font-bold text-xl text-neighbor-blue mb-2">Aide Administrative</h3>
+                    <p class="font-body text-gray-600 mb-6 flex-grow">
+                        Besoin de fermer la rue ? De louer des tables à la mairie ?
+                        Nous vous fournissons les modèles de lettres et les contacts utiles pour faciliter vos démarches officielles.
+                    </p>
+                    <a href="#" class="inline-flex items-center text-sm font-bold text-neighbor-blue hover:underline" rel="nofollow">
+                        Télécharger les modèles <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                    </a>
+                </div>
+
+                <!-- Card 5: Privacy (Full Width Strip) -->
+                <div class="md:col-span-3 bg-white rounded-3xl p-6 border border-stone-100 flex flex-col md:flex-row items-center justify-center gap-6 text-center md:text-left mt-2">
+                    <div class="w-12 h-12 bg-gray-50 text-gray-600 rounded-full flex items-center justify-center text-xl shrink-0">
+                        🛡️
+                    </div>
+                    <div>
+                        <h4 class="font-heading font-bold text-lg text-neighbor-stone">Safe & Privé</h4>
+                        <p class="font-body text-sm text-gray-500 max-w-2xl">Pas de compte obligatoire. Pas de revente de données. Tout est supprimé 30 jours après la fête. Conforme RGPD.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Context & Official Link -->
+    <section class="py-16 px-4 bg-neighbor-cream border-t border-stone-100">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="font-heading font-bold text-3xl mb-6 text-neighbor-stone">Une initiative citoyenne</h2>
+            <p class="font-body text-gray-700 text-lg mb-8">
+                Voisinons.fr est un outil indépendant créé pour faciliter l'organisation locale. 
+                Pour retrouver les dates officielles, les kits de communication nationaux et l'historique de cet événement magnifique, visitez le site officiel.
+            </p>
+            <a href="https://fetedesvoisins.fr" target="_blank" class="inline-flex items-center gap-2 text-neighbor-orange font-bold font-head hover:underline underline-offset-4" rel="nofollow">
+                Voir le site officiel fetedesvoisins.fr <i class="fas fa-external-link-alt text-xs"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Big CTA -->
+    <section id="creer" class="py-24 px-4 bg-neighbor-stone relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <h2 class="font-heading font-bold text-5xl md:text-7xl text-white mb-8 tracking-tighter">
+                Tout commence par un <br><span class="text-neighbor-yellow">"Bonjour"</span>
+            </h2>
+            <p class="text-gray-300 text-xl font-body mb-10 max-w-2xl mx-auto">
+                Ne repoussez pas à l'année prochaine. Créez la page de votre rue en 30 secondes et imprimez l'affiche ce soir.
+            </p>
+            <form class="flex flex-col md:flex-row gap-4 justify-center max-w-lg mx-auto">
+                <input type="text" placeholder="Nom de votre lieu (ex: Immeuble 24B)" class="px-6 py-4 rounded-xl border-none text-gray-900 font-body outline-none focus:ring-4 focus:ring-neighbor-orange/50 transition-all flex-1">
+                <button type="button" class="bg-neighbor-orange text-white px-8 py-4 rounded-xl font-bold font-heading text-lg hover:bg-orange-600 hover:scale-105 transition-all shadow-lg shadow-orange-900/20">
+                    C'est parti !
+                </button>
+            </form>
+            <p class="mt-4 text-white/40 text-sm font-hand">Aucune inscription requise pour commencer</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-neighbor-dark text-white py-12 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="col-span-1 md:col-span-2">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-6 h-6 bg-neighbor-orange rounded-full flex items-center justify-center text-white text-xs font-bold">V</div>
+                    <span class="font-heading font-bold text-lg">voisinons.fr</span>
+                </div>
+                <p class="text-gray-400 text-sm font-body max-w-sm">
+                    Fait avec ❤️ pour des quartiers plus vivants. Un outil gratuit pour reconnecter les voisins entre eux.
+                </p>
+            </div>
+            
+            <div>
+                <h4 class="font-bold font-heading mb-4 text-gray-200">Légal</h4>
+                <ul class="space-y-2 text-sm text-gray-400 font-body">
+                    <li><a href="#" class="hover:text-neighbor-orange" rel="nofollow">Mentions Légales</a></li>
+                    <li><a href="#" class="hover:text-neighbor-orange" rel="nofollow">Politique de confidentialité (RGPD)</a></li>
+                    <li><a href="#" class="hover:text-neighbor-orange" rel="nofollow">CGU</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-bold font-heading mb-4 text-gray-200">Liens utiles</h4>
+                <ul class="space-y-2 text-sm text-gray-400 font-body">
+                    <li><a href="https://fetedesvoisins.fr" target="_blank" class="hover:text-neighbor-orange" rel="nofollow">Site Officiel</a></li>
+                    <li><a href="#" class="hover:text-neighbor-orange" rel="nofollow">Kit d'organisation</a></li>
+                    <li><a href="#" class="hover:text-neighbor-orange" rel="nofollow">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 mt-8 pt-8 border-t border-white/10 text-center md:text-left text-xs text-gray-500 font-body flex flex-col md:flex-row justify-between items-center">
+            <p>&copy; 2023 Voisinons.fr. Tous droits réservés.</p>
+            <p class="mt-2 md:mt-0">Hébergé en France 🇫🇷</p>
+        </div>
+    </footer>
+
+    <!-- Init Animations -->
+    <script>
+        // Simple Intersection Observer for scroll animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('opacity-100', 'translate-y-0');
+                        entry.target.classList.remove('opacity-0', 'translate-y-10');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            // Apply to elements if we wanted JS control, but CSS animation is handling the hero
+            // Let's add smooth scroll interactions for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
