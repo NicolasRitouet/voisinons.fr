@@ -49,9 +49,13 @@ export default function ConfidentialitePage() {
             </p>
             <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
               <li><strong>Pour les organisateurs :</strong> nom, adresse email, adresse de la fête</li>
-              <li><strong>Pour les participants :</strong> nom, adresse email (optionnel), nombre de personnes, ce qu&apos;ils apportent</li>
+              <li><strong>Pour les participants :</strong> nom, adresse email (optionnel), téléphone (optionnel), nombre de personnes, ce qu&apos;ils apportent</li>
               <li><strong>Données techniques :</strong> adresse IP, type de navigateur (logs serveur)</li>
             </ul>
+            <p className="text-gray-700 leading-relaxed mt-4">
+              Les coordonnées des participants (email, téléphone) sont visibles uniquement par l&apos;organisateur
+              de la fête concernée.
+            </p>
           </section>
 
           <section>
@@ -64,9 +68,13 @@ export default function ConfidentialitePage() {
             <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
               <li>Permettre la création et la gestion de pages d&apos;événements</li>
               <li>Permettre aux participants de s&apos;inscrire aux événements</li>
+              <li>Permettre à l&apos;organisateur de tenir informés les participants (email/téléphone si fourni)</li>
               <li>Envoyer des emails de confirmation et de rappel (si email fourni)</li>
               <li>Assurer le bon fonctionnement technique du service</li>
             </ul>
+            <p className="text-gray-700 leading-relaxed mt-4">
+              Aucune prospection commerciale n&apos;est effectuée à partir des coordonnées collectées.
+            </p>
           </section>
 
           <section>
@@ -102,10 +110,14 @@ export default function ConfidentialitePage() {
               Les seuls destinataires sont :
             </p>
             <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4 mt-4">
+              <li><strong>Organisateur de l&apos;événement</strong> : accès aux coordonnées des participants pour tenir informés</li>
               <li><strong>Vercel Inc.</strong> : hébergement du site</li>
               <li><strong>Neon</strong> : hébergement de la base de données</li>
               <li><strong>Resend</strong> : envoi des emails transactionnels</li>
             </ul>
+            <p className="text-gray-700 leading-relaxed mt-4">
+              Voisinons.fr n&apos;utilise jamais les emails ou numéros de téléphone à des fins publicitaires.
+            </p>
           </section>
 
           <section>
@@ -166,7 +178,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <p className="text-sm text-gray-500 pt-8 border-t">
-            Dernière mise à jour : Janvier 2025
+            Dernière mise à jour : Janvier 2026
           </p>
         </div>
       </div>

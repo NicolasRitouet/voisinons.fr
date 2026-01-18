@@ -8,6 +8,7 @@ import { placeTypeLabels } from "@/lib/validations/party";
 interface PartyHeaderProps {
   party: Party;
   coverImage?: string | null;
+  coverImageSource?: "custom" | "panoramax" | null;
 }
 
 const placeTypeIcons: Record<string, string> = {
@@ -19,7 +20,11 @@ const placeTypeIcons: Record<string, string> = {
   autre: "&#127881;",
 };
 
-export function PartyHeader({ party, coverImage }: PartyHeaderProps) {
+export function PartyHeader({
+  party,
+  coverImage,
+  coverImageSource,
+}: PartyHeaderProps) {
   const formattedDate = format(new Date(party.dateStart), "EEEE d MMMM yyyy", {
     locale: fr,
   });
@@ -34,15 +39,23 @@ export function PartyHeader({ party, coverImage }: PartyHeaderProps) {
       {/* Background image from Panoramax */}
       {coverImage && (
         <>
-          <Image
-            src={coverImage}
-            alt={`Vue de ${party.address}`}
-            fill
-            className="object-cover opacity-30"
-            priority
-            unoptimized
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-neighbor-stone via-neighbor-stone/80 to-neighbor-stone/60" />
+          {coverImageSource === "custom" ? (
+            <img
+              src={coverImage}
+              alt={`Illustration de ${party.name}`}
+              className="absolute inset-0 w-full h-full object-cover opacity-55"
+            />
+          ) : (
+            <Image
+              src={coverImage}
+              alt={`Vue de ${party.address}`}
+              fill
+              className="object-cover opacity-55"
+              priority
+              unoptimized
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-neighbor-stone/85 via-neighbor-stone/60 to-neighbor-stone/30" />
         </>
       )}
 

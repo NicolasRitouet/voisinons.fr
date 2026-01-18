@@ -11,6 +11,9 @@ const envSchema = z.object({
   // Optional - app URL (has default)
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
 
+  // UploadThing
+  UPLOADTHING_TOKEN: z.string().min(1, "UPLOADTHING_TOKEN is required"),
+
   // System
   NODE_ENV: z
     .enum(["development", "production", "test"])

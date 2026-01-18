@@ -40,6 +40,7 @@ import {
 } from "@/lib/validations/party";
 import { createParty, checkSlugAvailability } from "@/lib/actions/party";
 import { saveAdminParty } from "@/lib/storage/admin-parties";
+import { UploadButton } from "@/lib/uploadthing";
 
 export function CreatePartyForm() {
   const router = useRouter();
@@ -47,6 +48,7 @@ export function CreatePartyForm() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<{
     slug: string;
     adminToken: string;
@@ -64,6 +66,7 @@ export function CreatePartyForm() {
       timeStart: "14:00",
       timeEnd: "",
       description: "",
+      coverImageUrl: "",
       isPrivate: false,
       accessCode: "",
       organizerName: "",
@@ -76,6 +79,7 @@ export function CreatePartyForm() {
   const watchAddress = form.watch("address");
   const watchSlug = form.watch("slug");
   const watchIsPrivate = form.watch("isPrivate");
+  const watchCoverImage = form.watch("coverImageUrl");
 
   // Auto-generate name and slug from address
   useEffect(() => {
@@ -425,6 +429,74 @@ export function CreatePartyForm() {
                   <FormDescription>
                     Markdown supporté pour la mise en forme
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Cover Image */}
+            <FormField
+              control={form.control}
+              name="coverImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image d&apos;illustration (optionnel)</FormLabel>
+                  <FormControl>
+                    <div className="space-y-3">
+                      {watchCoverImage ? (
+                        <div className="relative w-full max-w-md overflow-hidden rounded-lg border border-gray-200">
+                          <img
+                            src={watchCoverImage}
+                            alt="Aperçu de l'illustration"
+                            className="h-48 w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full max-w-md rounded-lg border border-dashed border-gray-300 bg-white p-4 text-sm text-gray-500">
+                          Aucune image sélectionnée
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <UploadButton
+                          endpoint="partyCoverImage"
+                          onClientUploadComplete={(res) => {
+                            const url =
+                              res?.[0]?.url || (res?.[0] as { ufsUrl?: string })?.ufsUrl;
+                            if (url) {
+                              field.onChange(url);
+                              setUploadError(null);
+                            }
+                          }}
+                          onUploadError={(error) => {
+                            setUploadError(error.message);
+                          }}
+                          appearance={{
+                            button:
+                              "bg-neighbor-stone text-white hover:bg-neighbor-orange px-4 py-2 rounded-md",
+                          }}
+                        />
+                        {watchCoverImage && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              field.onChange("");
+                              setUploadError(null);
+                            }}
+                          >
+                            Retirer l&apos;image
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Téléversez une image pour illustrer la fête. Elle apparaîtra en haut de la page.
+                  </FormDescription>
+                  {uploadError && (
+                    <p className="text-sm text-red-600">{uploadError}</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

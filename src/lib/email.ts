@@ -110,3 +110,93 @@ export async function sendPartyCreatedEmail(data: PartyCreatedEmailData) {
     return { success: false, error: "Failed to send email" };
   }
 }
+
+interface ParticipantEditEmailData {
+  to: string;
+  participantName: string;
+  partyName: string;
+  partySlug: string;
+  editToken: string;
+  partyDate: Date;
+  partyAddress: string;
+}
+
+export async function sendParticipantEditEmail(data: ParticipantEditEmailData) {
+  const resend = getResendClient();
+  if (!resend) {
+    return { success: false, error: "Email service not configured" };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voisinons.fr";
+  const publicUrl = `${appUrl}/${data.partySlug}`;
+  const editUrl = `${appUrl}/${data.partySlug}/participer?participantToken=${data.editToken}`;
+
+  const formattedDate = data.partyDate.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL || "Voisinons.fr <noreply@mail.voisinons.fr>";
+
+  try {
+    const { data: emailData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.to,
+      subject: `Votre inscription à \"${data.partyName}\"`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="text-align: center; margin-bottom: 30px;">
+    <div style="display: inline-block; background: #E86E3A; color: white; width: 50px; height: 50px; border-radius: 50%; line-height: 50px; font-size: 24px; font-weight: bold;">V</div>
+    <h1 style="color: #3D3D3D; margin: 10px 0 0 0;">voisinons.fr</h1>
+  </div>
+
+  <p>Bonjour ${data.participantName},</p>
+
+  <p>Vous êtes bien inscrit(e) à la fête <strong>"${data.partyName}"</strong>.</p>
+
+  <div style="background: #FFF8F0; border-radius: 10px; padding: 20px; margin: 20px 0;">
+    <p style="margin: 0 0 10px 0;"><strong>Date :</strong> ${formattedDate}</p>
+    <p style="margin: 0;"><strong>Lieu :</strong> ${data.partyAddress}</p>
+  </div>
+
+  <h2 style="color: #3D3D3D; font-size: 18px;">Lien pour modifier votre participation</h2>
+  <p>Conservez ce lien, il vous permet de modifier votre inscription :</p>
+  <p style="background: #f5f5f5; padding: 10px; border-radius: 5px; word-break: break-all;">
+    <a href="${editUrl}" style="color: #E86E3A; text-decoration: none;">${editUrl}</a>
+  </p>
+
+  <p>Page publique : <a href="${publicUrl}" style="color: #E86E3A; text-decoration: none;">${publicUrl}</a></p>
+
+  <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+  <p style="color: #666; font-size: 14px;">
+    À bientôt pour la fête !<br>
+    L'équipe Voisinons.fr
+  </p>
+</body>
+</html>
+      `,
+    });
+
+    if (error) {
+      console.error("[Email] Resend API error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: emailData?.id };
+  } catch (err) {
+    console.error("[Email] Failed to send email:", err);
+    return { success: false, error: "Failed to send email" };
+  }
+}

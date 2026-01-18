@@ -65,6 +65,7 @@ npx @keywaysh/cli pull -e development
 | `DATABASE_URL` | URL de connexion PostgreSQL | Oui |
 | `RESEND_API_KEY` | Clé API Resend pour les emails | Non |
 | `NEXT_PUBLIC_APP_URL` | URL de l'application | Non |
+| `UPLOADTHING_TOKEN` | Token UploadThing pour les images | Oui |
 
 5. Créer la base de données et appliquer le schéma :
 

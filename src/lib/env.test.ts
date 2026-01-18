@@ -10,6 +10,7 @@ describe("env schema validation", () => {
     RESEND_API_KEY: z.string().optional(),
     RESEND_FROM_EMAIL: z.string().email().optional(),
     NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
+    UPLOADTHING_TOKEN: z.string().min(1, "UPLOADTHING_TOKEN is required"),
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
@@ -19,6 +20,7 @@ describe("env schema validation", () => {
     const env = {
       DATABASE_URL: "postgresql://user:pass@host:5432/db",
       RESEND_API_KEY: "re_123456",
+      UPLOADTHING_TOKEN: "ut_test",
       NODE_ENV: "production",
     };
 
@@ -29,6 +31,7 @@ describe("env schema validation", () => {
   it("should accept minimal valid environment", () => {
     const env = {
       DATABASE_URL: "postgresql://user:pass@host:5432/db",
+      UPLOADTHING_TOKEN: "ut_test",
     };
 
     const result = envSchema.safeParse(env);
@@ -55,9 +58,19 @@ describe("env schema validation", () => {
     expect(result.success).toBe(false);
   });
 
+  it("should reject missing UPLOADTHING_TOKEN", () => {
+    const env = {
+      DATABASE_URL: "postgresql://user:pass@host:5432/db",
+    };
+
+    const result = envSchema.safeParse(env);
+    expect(result.success).toBe(false);
+  });
+
   it("should reject invalid NODE_ENV", () => {
     const env = {
       DATABASE_URL: "postgresql://user:pass@host:5432/db",
+      UPLOADTHING_TOKEN: "ut_test",
       NODE_ENV: "staging",
     };
 
@@ -69,6 +82,7 @@ describe("env schema validation", () => {
     const env = {
       DATABASE_URL: "postgresql://user:pass@host:5432/db",
       RESEND_FROM_EMAIL: "not-an-email",
+      UPLOADTHING_TOKEN: "ut_test",
     };
 
     const result = envSchema.safeParse(env);
@@ -79,6 +93,7 @@ describe("env schema validation", () => {
     const env = {
       DATABASE_URL: "postgresql://user:pass@host:5432/db",
       NEXT_PUBLIC_APP_URL: "https://voisinons.fr",
+      UPLOADTHING_TOKEN: "ut_test",
     };
 
     const result = envSchema.safeParse(env);

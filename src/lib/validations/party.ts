@@ -57,6 +57,12 @@ export const createPartySchema = z
       .string()
       .max(5000, "La description ne peut pas dépasser 5000 caractères")
       .optional(),
+    coverImageUrl: z
+      .string()
+      .url("Lien d'image invalide")
+      .max(2048, "Le lien d'image est trop long")
+      .optional()
+      .or(z.literal("")),
     isPrivate: z.boolean().default(false),
     accessCode: z
       .string()
@@ -82,6 +88,51 @@ export const createPartySchema = z
 
 export type CreatePartyInput = z.input<typeof createPartySchema>;
 export type CreatePartyOutput = z.output<typeof createPartySchema>;
+
+export const updatePartyDetailsSchema = z
+  .object({
+    partyId: z.string().uuid(),
+    token: z.string().min(10, "Token requis"),
+    address: z
+      .string()
+      .min(5, "L'adresse doit faire au moins 5 caractères")
+      .max(500, "L'adresse ne peut pas dépasser 500 caractères"),
+    coverImageUrl: z
+      .string()
+      .url("Lien d'image invalide")
+      .max(2048, "Le lien d'image est trop long")
+      .optional()
+      .or(z.literal("")),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+    date: z.string().refine((val) => {
+      const date = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return !isNaN(date.getTime()) && date >= today;
+    }, "La date doit être aujourd'hui ou dans le futur"),
+    timeStart: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis"),
+    timeEnd: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis")
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.timeEnd && data.timeEnd !== "") {
+      if (data.timeEnd <= data.timeStart) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "L'heure de fin doit être après l'heure de début",
+          path: ["timeEnd"],
+        });
+      }
+    }
+  });
+
+export type UpdatePartyDetailsInput = z.input<typeof updatePartyDetailsSchema>;
 
 /**
  * Parse une adresse française et extrait la rue et la ville

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Outfit, Gloria_Hallelujah } from "next/font/google";
+import "@uploadthing/react/styles.css";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({

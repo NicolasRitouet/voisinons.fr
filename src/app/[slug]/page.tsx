@@ -8,6 +8,9 @@ import { ParticipantsList } from "@/components/party/participants-list";
 import { JoinPartyButton } from "@/components/party/join-party-button";
 import { PartyUpdates } from "@/components/party/party-updates";
 import { AdminEditButton } from "@/components/party/admin-edit-button";
+import { PartyChannels } from "@/components/party/party-channels";
+import { PartyNeeds } from "@/components/party/party-needs";
+import { mergeNeedsWithDefaults } from "@/lib/needs";
 
 // Force dynamic rendering (requires DB access)
 export const dynamic = "force-dynamic";
@@ -47,19 +50,23 @@ export default async function PartyPage({ params }: PartyPageProps) {
     notFound();
   }
 
-  // Fetch Panoramax image if coordinates are available
-  let coverImage: string | null = null;
-  if (party.latitude && party.longitude) {
+  const needsWithDefaults = mergeNeedsWithDefaults(party.needs);
+
+  let coverImage: string | null = party.coverImageUrl || null;
+  let coverImageSource: "custom" | "panoramax" | null = coverImage ? "custom" : null;
+
+  if (!coverImage && party.latitude && party.longitude) {
     coverImage = await getPanoramaxImage(
       parseFloat(party.latitude),
       parseFloat(party.longitude)
     );
+    coverImageSource = coverImage ? "panoramax" : null;
   }
 
   return (
     <main className="min-h-screen bg-neighbor-cream">
       <AdminEditButton slug={slug} />
-      <PartyHeader party={party} coverImage={coverImage} />
+      <PartyHeader party={party} coverImage={coverImage} coverImageSource={coverImageSource} />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -85,8 +92,10 @@ export default async function PartyPage({ params }: PartyPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <JoinPartyButton partyId={party.id} partySlug={party.slug} />
+            <JoinPartyButton partySlug={party.slug} />
             <ParticipantsList participants={party.participants} />
+            <PartyNeeds needs={needsWithDefaults} />
+            <PartyChannels channels={party.discussionChannels} />
           </div>
         </div>
       </div>

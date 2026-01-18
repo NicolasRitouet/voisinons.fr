@@ -30,6 +30,7 @@ export const needCategoryEnum = pgEnum("need_category", [
   "materiel",
   "animations",
   "nettoyage",
+  "autre",
 ]);
 
 export const channelTypeEnum = pgEnum("channel_type", [
@@ -72,6 +73,7 @@ export const participants = pgTable("participants", {
   partyId: uuid("party_id")
     .notNull()
     .references(() => parties.id, { onDelete: "cascade" }),
+  editToken: varchar("edit_token", { length: 64 }).unique(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 50 }),

@@ -1,11 +1,25 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { parties, participants, partyUpdates } from "@/lib/db/schema";
+import { parties, participants, partyUpdates, discussionChannels, needs } from "@/lib/db/schema";
 import { sendPartyCreatedEmail } from "@/lib/email";
-import { createPartySchema, type CreatePartyInput } from "@/lib/validations/party";
+import {
+  createPartySchema,
+  updatePartyDetailsSchema,
+  type CreatePartyInput,
+  type UpdatePartyDetailsInput,
+} from "@/lib/validations/party";
+import {
+  createChannelSchema,
+  updateChannelSchema,
+  deleteChannelSchema,
+  type CreateChannelInput,
+  type UpdateChannelInput,
+  type DeleteChannelInput,
+} from "@/lib/validations/channel";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { defaultNeedCategories } from "@/lib/needs";
 
 function generateToken(): string {
   return randomBytes(32).toString("hex");
@@ -21,7 +35,16 @@ export async function createParty(data: CreatePartyInput) {
     };
   }
 
-  const { slug, date, timeStart, timeEnd, latitude, longitude, ...rest } = validated.data;
+  const {
+    slug,
+    date,
+    timeStart,
+    timeEnd,
+    latitude,
+    longitude,
+    coverImageUrl,
+    ...rest
+  } = validated.data;
 
   // Combine date + time into dateStart and dateEnd
   const dateOnly = new Date(date);
@@ -62,6 +85,7 @@ export async function createParty(data: CreatePartyInput) {
           latitude: latitude?.toString() ?? null,
           longitude: longitude?.toString() ?? null,
           adminToken,
+          coverImageUrl: coverImageUrl || null,
           ...rest,
         })
         .returning();
@@ -73,6 +97,15 @@ export async function createParty(data: CreatePartyInput) {
         email: rest.organizerEmail,
         isOrganizer: true,
       });
+
+      // Seed default bring categories
+      await tx.insert(needs).values(
+        defaultNeedCategories.map((category) => ({
+          partyId: newParty.id,
+          category: category.category,
+          description: category.label,
+        }))
+      );
 
       return newParty;
     });
@@ -122,6 +155,7 @@ export async function getPartyBySlug(slug: string) {
     with: {
       participants: true,
       needs: {
+        orderBy: (needs, { asc }) => [asc(needs.createdAt)],
         with: {
           contributions: {
             with: {
@@ -144,6 +178,7 @@ export async function getPartyForAdmin(slug: string, token: string) {
     with: {
       participants: true,
       needs: {
+        orderBy: (needs, { asc }) => [asc(needs.createdAt)],
         with: {
           contributions: {
             with: {
@@ -186,5 +221,198 @@ export async function createPartyUpdate(partyId: string, token: string, content:
   } catch (error) {
     console.error("Failed to create update:", error);
     return { success: false as const, error: "Erreur lors de la publication" };
+  }
+}
+
+export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
+  const validated = updatePartyDetailsSchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const {
+    partyId,
+    token,
+    date,
+    timeStart,
+    timeEnd,
+    address,
+    latitude,
+    longitude,
+    coverImageUrl,
+  } = validated.data;
+
+  const party = await db.query.parties.findFirst({
+    where: eq(parties.id, partyId),
+  });
+
+  if (!party || party.adminToken !== token) {
+    return { success: false as const, error: { _form: ["Non autorisé"] } };
+  }
+
+  // Combine date + time into dateStart and dateEnd
+  const dateOnly = new Date(date);
+  const [startHours, startMinutes] = timeStart.split(":").map(Number);
+  const dateStart = new Date(dateOnly);
+  dateStart.setHours(startHours, startMinutes, 0, 0);
+
+  let dateEnd: Date | null = null;
+  if (timeEnd && timeEnd !== "") {
+    const [endHours, endMinutes] = timeEnd.split(":").map(Number);
+    dateEnd = new Date(dateOnly);
+    dateEnd.setHours(endHours, endMinutes, 0, 0);
+  }
+
+  try {
+    await db
+      .update(parties)
+      .set({
+        address,
+        dateStart,
+        dateEnd,
+        latitude: latitude?.toString() ?? null,
+        longitude: longitude?.toString() ?? null,
+        coverImageUrl: coverImageUrl || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(parties.id, partyId));
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to update party details:", error);
+    return {
+      success: false as const,
+      error: { _form: ["Une erreur est survenue lors de la mise à jour"] },
+    };
+  }
+}
+
+export async function createDiscussionChannel(data: CreateChannelInput) {
+  const validated = createChannelSchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const { partyId, token, type, name, url } = validated.data;
+
+  const party = await db.query.parties.findFirst({
+    where: eq(parties.id, partyId),
+  });
+
+  if (!party || party.adminToken !== token) {
+    return { success: false as const, error: { _form: ["Non autorisé"] } };
+  }
+
+  try {
+    await db.insert(discussionChannels).values({
+      partyId,
+      type,
+      name,
+      url,
+    });
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to create discussion channel:", error);
+    return {
+      success: false as const,
+      error: { _form: ["Une erreur est survenue lors de l'ajout du canal"] },
+    };
+  }
+}
+
+export async function updateDiscussionChannel(data: UpdateChannelInput) {
+  const validated = updateChannelSchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const { channelId, token, type, name, url } = validated.data;
+
+  const channel = await db.query.discussionChannels.findFirst({
+    where: eq(discussionChannels.id, channelId),
+  });
+
+  if (!channel) {
+    return { success: false as const, error: { _form: ["Canal introuvable"] } };
+  }
+
+  const party = await db.query.parties.findFirst({
+    where: eq(parties.id, channel.partyId),
+  });
+
+  if (!party || party.adminToken !== token) {
+    return { success: false as const, error: { _form: ["Non autorisé"] } };
+  }
+
+  try {
+    await db
+      .update(discussionChannels)
+      .set({
+        type,
+        name,
+        url,
+      })
+      .where(eq(discussionChannels.id, channelId));
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to update discussion channel:", error);
+    return {
+      success: false as const,
+      error: { _form: ["Une erreur est survenue lors de la mise à jour"] },
+    };
+  }
+}
+
+export async function deleteDiscussionChannel(data: DeleteChannelInput) {
+  const validated = deleteChannelSchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const { channelId, token } = validated.data;
+
+  const channel = await db.query.discussionChannels.findFirst({
+    where: eq(discussionChannels.id, channelId),
+  });
+
+  if (!channel) {
+    return { success: false as const, error: { _form: ["Canal introuvable"] } };
+  }
+
+  const party = await db.query.parties.findFirst({
+    where: eq(parties.id, channel.partyId),
+  });
+
+  if (!party || party.adminToken !== token) {
+    return { success: false as const, error: { _form: ["Non autorisé"] } };
+  }
+
+  try {
+    await db.delete(discussionChannels).where(eq(discussionChannels.id, channelId));
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to delete discussion channel:", error);
+    return {
+      success: false as const,
+      error: { _form: ["Une erreur est survenue lors de la suppression"] },
+    };
   }
 }

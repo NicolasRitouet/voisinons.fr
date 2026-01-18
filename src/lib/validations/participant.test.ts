@@ -12,12 +12,16 @@ const joinPartySchema = z.object({
 });
 
 const updateParticipantSchema = z.object({
-  participantId: z.string().uuid(),
+  participantId: z.string().uuid().optional(),
+  editToken: z.string().min(10).optional(),
   name: z.string().min(2, "Le nom doit faire au moins 2 caractères"),
   email: z.string().email("Email invalide").optional(),
   phone: z.string().optional(),
   guestCount: z.number().min(1).max(20).default(1),
   bringing: z.string().optional(),
+}).refine((data) => data.participantId || data.editToken, {
+  message: "Identifiant requis",
+  path: ["participantId"],
 });
 
 describe("joinPartySchema", () => {
@@ -162,6 +166,26 @@ describe("updateParticipantSchema", () => {
 
   it("should reject name too short", () => {
     const data = { ...validData, name: "A" };
+    const result = updateParticipantSchema.safeParse(data);
+    expect(result.success).toBe(false);
+  });
+
+  it("should accept edit token instead of participantId", () => {
+    const data = {
+      ...validData,
+      participantId: undefined,
+      editToken: "a".repeat(32),
+    };
+    const result = updateParticipantSchema.safeParse(data);
+    expect(result.success).toBe(true);
+  });
+
+  it("should reject when both participantId and editToken are missing", () => {
+    const data = {
+      ...validData,
+      participantId: undefined,
+      editToken: undefined,
+    };
     const result = updateParticipantSchema.safeParse(data);
     expect(result.success).toBe(false);
   });

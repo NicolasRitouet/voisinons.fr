@@ -18,6 +18,7 @@ describe("createPartySchema", () => {
     timeStart: "14:00",
     timeEnd: "21:00",
     description: "Une super fête de voisins",
+    coverImageUrl: "https://example.com/image.jpg",
     isPrivate: false,
     organizerName: "Jean Dupont",
     organizerEmail: "jean@example.com",
@@ -37,6 +38,12 @@ describe("createPartySchema", () => {
 
     it("should accept party without description", () => {
       const data = { ...validData, description: undefined };
+      const result = createPartySchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept party without cover image", () => {
+      const data = { ...validData, coverImageUrl: undefined };
       const result = createPartySchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -130,6 +137,14 @@ describe("createPartySchema", () => {
   describe("email validation", () => {
     it("should reject invalid email", () => {
       const data = { ...validData, organizerEmail: "invalid-email" };
+      const result = createPartySchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("cover image validation", () => {
+    it("should reject invalid cover image URL", () => {
+      const data = { ...validData, coverImageUrl: "not-a-url" };
       const result = createPartySchema.safeParse(data);
       expect(result.success).toBe(false);
     });

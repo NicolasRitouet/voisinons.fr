@@ -25,6 +25,7 @@ export const mockParty = {
 export const mockParticipant = {
   id: "660e8400-e29b-41d4-a716-446655440001",
   partyId: mockParty.id,
+  editToken: "edittoken1234567890",
   name: "Marie Martin",
   email: "marie@example.com",
   phone: "0612345678",
