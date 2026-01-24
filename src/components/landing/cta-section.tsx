@@ -9,8 +9,7 @@ export function CTASection() {
       <div
         className="absolute top-0 left-0 w-full h-full opacity-5"
         style={{
-          backgroundImage:
-            "url('https://www.transparenttextures.com/patterns/cubes.png')",
+          backgroundImage: "url('/patterns/cubes.png')",
         }}
       />
       <div className="max-w-5xl mx-auto text-center relative z-10">
