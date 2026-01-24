@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,8 @@ export function AdminNeeds({ partyId, token, needs }: AdminNeedsProps) {
     },
   });
 
-  const selectedCategory = form.watch("category");
+  // useWatch is more efficient than form.watch() - only re-renders when this field changes
+  const selectedCategory = useWatch({ control: form.control, name: "category" });
 
   async function onSubmit(data: CreateNeedInput) {
     setFormError(null);

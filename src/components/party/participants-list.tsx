@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { Participant } from "@/lib/db/schema";
 import { Badge } from "@/components/ui/badge";
 
@@ -6,10 +7,20 @@ interface ParticipantsListProps {
 }
 
 export function ParticipantsList({ participants }: ParticipantsListProps) {
-  const totalGuests = participants.reduce((sum, p) => sum + (p.guestCount || 1), 0);
-  const contributions = participants
-    .filter((p) => p.bringing)
-    .map((p) => p.bringing);
+  // Combine iterations: compute totalGuests and filter contributions in single pass
+  const { totalGuests, participantsWithContributions } = useMemo(() => {
+    let guests = 0;
+    const withContributions: Participant[] = [];
+
+    for (const p of participants) {
+      guests += p.guestCount || 1;
+      if (p.bringing) {
+        withContributions.push(p);
+      }
+    }
+
+    return { totalGuests: guests, participantsWithContributions: withContributions };
+  }, [participants]);
 
   if (participants.length === 0) {
     return (
@@ -72,25 +83,23 @@ export function ParticipantsList({ participants }: ParticipantsListProps) {
         </ul>
       </div>
 
-      {contributions.length > 0 && (
+      {participantsWithContributions.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="font-[family-name:var(--font-space-grotesk)] font-bold text-xl text-neighbor-stone mb-4">
             Ce qu&apos;on apporte
           </h2>
           <ul className="space-y-2">
-            {participants
-              .filter((p) => p.bringing)
-              .map((participant) => (
-                <li
-                  key={participant.id}
-                  className="font-[family-name:var(--font-outfit)] text-sm"
-                >
-                  <span className="font-medium text-neighbor-stone">
-                    {participant.name.split(" ")[0]} :
-                  </span>{" "}
-                  <span className="text-gray-600">{participant.bringing}</span>
-                </li>
-              ))}
+            {participantsWithContributions.map((participant) => (
+              <li
+                key={participant.id}
+                className="font-[family-name:var(--font-outfit)] text-sm"
+              >
+                <span className="font-medium text-neighbor-stone">
+                  {participant.name.split(" ")[0]} :
+                </span>{" "}
+                <span className="text-gray-600">{participant.bringing}</span>
+              </li>
+            ))}
           </ul>
         </div>
       )}

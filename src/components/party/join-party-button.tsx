@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  getParticipantIdKey,
-  getParticipantTokenKey,
+  getParticipantId,
+  getParticipantToken,
+  setParticipantToken,
 } from "@/lib/storage/participant";
 
 interface JoinPartyButtonProps {
@@ -22,15 +23,15 @@ export function JoinPartyButton({ partySlug }: JoinPartyButtonProps) {
   useEffect(() => {
     const tokenFromUrl = searchParams.get("participantToken");
     if (tokenFromUrl) {
-      localStorage.setItem(getParticipantTokenKey(partySlug), tokenFromUrl);
+      setParticipantToken(partySlug, tokenFromUrl);
       router.replace(`/${partySlug}/participer?participantToken=${tokenFromUrl}`);
       return;
     }
 
-    const storedToken = localStorage.getItem(getParticipantTokenKey(partySlug));
-    const storedId = localStorage.getItem(getParticipantIdKey(partySlug));
+    const storedToken = getParticipantToken(partySlug);
+    const storedId = getParticipantId(partySlug);
     setHasRegistration(Boolean(storedToken || storedId));
-  }, [partySlug, router, searchParams]);
+  }, [partySlug, searchParams, router]);
 
   const primaryLabel = hasRegistration
     ? "Modifier ma participation"

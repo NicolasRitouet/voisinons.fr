@@ -2,9 +2,10 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { fr } from "date-fns/locale";
+import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,19 @@ import {
 } from "@/lib/validations/party";
 import { createParty, checkSlugAvailability } from "@/lib/actions/party";
 import { saveAdminParty } from "@/lib/storage/admin-parties";
-import { UploadButton } from "@/lib/uploadthing";
+
+// Lazy load UploadButton - only loaded when user needs to upload
+const UploadButton = dynamic(
+  () => import("@/lib/uploadthing").then((m) => m.UploadButton),
+  {
+    ssr: false,
+    loading: () => (
+      <span className="bg-gray-200 text-gray-400 px-4 py-2 rounded-md text-sm">
+        Chargement...
+      </span>
+    ),
+  }
+);
 
 export function CreatePartyForm() {
   const router = useRouter();
@@ -74,12 +87,13 @@ export function CreatePartyForm() {
     },
   });
 
-  const { isValid } = form.formState;
+  const { isValid, dirtyFields } = form.formState;
 
-  const watchAddress = form.watch("address");
-  const watchSlug = form.watch("slug");
-  const watchIsPrivate = form.watch("isPrivate");
-  const watchCoverImage = form.watch("coverImageUrl");
+  // useWatch is more efficient than form.watch() - only subscribes to specific fields
+  const watchAddress = useWatch({ control: form.control, name: "address" });
+  const watchSlug = useWatch({ control: form.control, name: "slug" });
+  const watchIsPrivate = useWatch({ control: form.control, name: "isPrivate" });
+  const watchCoverImage = useWatch({ control: form.control, name: "coverImageUrl" });
 
   // Auto-generate name and slug from address
   useEffect(() => {
@@ -91,13 +105,15 @@ export function CreatePartyForm() {
         form.setValue("name", newName, { shouldValidate: true });
       }
 
-      // Auto-generate slug
-      const newSlug = generateSlugFromAddress(watchAddress);
-      if (newSlug.length >= 3) {
-        form.setValue("slug", newSlug);
+      // Auto-generate slug only if not manually edited
+      if (!dirtyFields.slug) {
+        const newSlug = generateSlugFromAddress(watchAddress);
+        if (newSlug.length >= 3) {
+          form.setValue("slug", newSlug);
+        }
       }
     }
-  }, [watchAddress, form]);
+  }, [watchAddress, form, dirtyFields.slug]);
 
   // Check slug availability
   useEffect(() => {

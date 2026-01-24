@@ -28,7 +28,14 @@ import {
   getParticipantByToken,
   updateParticipant,
 } from "@/lib/actions/participant";
-import { getParticipantIdKey, getParticipantTokenKey } from "@/lib/storage/participant";
+import {
+  getParticipantId,
+  setParticipantId,
+  getParticipantToken,
+  setParticipantToken,
+  removeParticipantToken,
+  removeParticipantId,
+} from "@/lib/storage/participant";
 
 interface JoinPartyFormProps {
   partyId: string;
@@ -48,7 +55,7 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
   const [existingParticipantId, setExistingParticipantId] = useState<string | null>(null);
-  const [participantToken, setParticipantToken] = useState<string | null>(null);
+  const [participantTokenState, setParticipantTokenState] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,21 +102,21 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
     async function checkExistingRegistration() {
       const tokenFromUrl = searchParams.get("participantToken");
       if (tokenFromUrl) {
-        localStorage.setItem(getParticipantTokenKey(partySlug), tokenFromUrl);
-        setParticipantToken(tokenFromUrl);
+        setParticipantToken(partySlug, tokenFromUrl);
+        setParticipantTokenState(tokenFromUrl);
         router.replace(`/${partySlug}/participer`);
       }
 
-      const storedToken = localStorage.getItem(getParticipantTokenKey(partySlug));
-      const storedId = localStorage.getItem(getParticipantIdKey(partySlug));
+      const storedToken = getParticipantToken(partySlug);
+      const storedId = getParticipantId(partySlug);
 
       if (storedToken) {
         const participant = await getParticipantByToken(storedToken);
 
         if (participant && participant.partyId === partyId) {
           setExistingParticipantId(participant.id);
-          setParticipantToken(storedToken);
-          localStorage.setItem(getParticipantIdKey(partySlug), participant.id);
+          setParticipantTokenState(storedToken);
+          setParticipantId(partySlug, participant.id);
           setName(participant.name);
           setEmail(participant.email || "");
           setPhone(participant.phone || "");
@@ -118,8 +125,8 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
           parseBringingFromText(participant.bringing || "");
           setIsEditMode(true);
         } else {
-          localStorage.removeItem(getParticipantTokenKey(partySlug));
-          setParticipantToken(null);
+          removeParticipantToken(partySlug);
+          setParticipantTokenState(null);
         }
       } else if (storedId) {
         const participant = await getParticipantById(storedId);
@@ -134,7 +141,7 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
           parseBringingFromText(participant.bringing || "");
           setIsEditMode(true);
         } else {
-          localStorage.removeItem(getParticipantIdKey(partySlug));
+          removeParticipantId(partySlug);
         }
       }
 
@@ -142,7 +149,7 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
     }
 
     checkExistingRegistration();
-  }, [partyId, partySlug, router, searchParams]);
+  }, [partyId, partySlug]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,10 +162,10 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
     }
 
     startTransition(async () => {
-      if (existingParticipantId || participantToken) {
+      if (existingParticipantId || participantTokenState) {
         const result = await updateParticipant({
           participantId: existingParticipantId || undefined,
-          editToken: participantToken || undefined,
+          editToken: participantTokenState || undefined,
           name: name.trim(),
           email: email.trim() || undefined,
           phone: phone.trim() || undefined,
@@ -184,10 +191,10 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
         });
 
         if (result.success && result.participantId) {
-          localStorage.setItem(getParticipantIdKey(partySlug), result.participantId);
+          setParticipantId(partySlug, result.participantId);
           if ("editToken" in result && result.editToken) {
-            localStorage.setItem(getParticipantTokenKey(partySlug), result.editToken);
-            setParticipantToken(result.editToken);
+            setParticipantToken(partySlug, result.editToken);
+            setParticipantTokenState(result.editToken);
           }
           setExistingParticipantId(result.participantId);
           setSuccessMessage("Merci ! Vous êtes bien inscrit(e).");

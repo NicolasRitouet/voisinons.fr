@@ -4,12 +4,16 @@ import {
   getAdminToken,
   removeAdminParty,
   getAllAdminParties,
+  _clearCache,
 } from "./admin-parties";
+
+const STORAGE_KEY = "voisinons_admin_parties:v1";
 
 describe("admin-parties storage", () => {
   beforeEach(() => {
-    // Clear localStorage before each test
+    // Clear localStorage and in-memory cache before each test
     localStorage.clear();
+    _clearCache();
     vi.clearAllMocks();
   });
 
@@ -18,7 +22,7 @@ describe("admin-parties storage", () => {
       saveAdminParty("ma-fete", "token123");
 
       const stored = JSON.parse(
-        localStorage.getItem("voisinons_admin_parties") || "[]"
+        localStorage.getItem(STORAGE_KEY) || "[]"
       );
       expect(stored).toHaveLength(1);
       expect(stored[0]).toEqual({ slug: "ma-fete", adminToken: "token123" });
@@ -30,7 +34,7 @@ describe("admin-parties storage", () => {
       saveAdminParty("fete-3", "token3");
 
       const stored = JSON.parse(
-        localStorage.getItem("voisinons_admin_parties") || "[]"
+        localStorage.getItem(STORAGE_KEY) || "[]"
       );
       expect(stored).toHaveLength(3);
     });
@@ -40,7 +44,7 @@ describe("admin-parties storage", () => {
       saveAdminParty("ma-fete", "new-token");
 
       const stored = JSON.parse(
-        localStorage.getItem("voisinons_admin_parties") || "[]"
+        localStorage.getItem(STORAGE_KEY) || "[]"
       );
       expect(stored).toHaveLength(1);
       expect(stored[0].adminToken).toBe("new-token");
@@ -127,7 +131,7 @@ describe("admin-parties storage", () => {
 
   describe("error handling", () => {
     it("should handle corrupted localStorage data gracefully", () => {
-      localStorage.setItem("voisinons_admin_parties", "not valid json");
+      localStorage.setItem(STORAGE_KEY, "not valid json");
 
       // Should not throw and return null/empty
       expect(() => getAdminToken("ma-fete")).not.toThrow();
@@ -146,6 +150,9 @@ describe("admin-parties storage", () => {
       vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
         throw new Error("localStorage unavailable");
       });
+
+      // Clear cache to ensure fresh reads
+      _clearCache();
 
       // Should not throw
       expect(() => saveAdminParty("ma-fete", "token")).not.toThrow();

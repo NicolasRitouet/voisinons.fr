@@ -57,23 +57,22 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
   const defaultLatitude = party.latitude ? parseFloat(party.latitude) : undefined;
   const defaultLongitude = party.longitude ? parseFloat(party.longitude) : undefined;
 
-  const totalGuests = party.participants.reduce(
-    (sum, p) => sum + (p.guestCount || 1),
-    0
-  );
+  // Single iteration over participants instead of 4 separate passes
+  let totalGuests = 0;
+  const emailsList: string[] = [];
+  const phonesList: string[] = [];
+  const contributionsList: string[] = [];
 
-  const emails = party.participants
-    .map((p) => p.email)
-    .filter((email): email is string => Boolean(email))
-    .join(", ");
-  const phones = party.participants
-    .map((p) => p.phone)
-    .filter((phone): phone is string => Boolean(phone))
-    .join(", ");
-  const contributions = party.participants
-    .filter((p) => p.bringing)
-    .map((p) => `${p.name}: ${p.bringing}`)
-    .join("\n");
+  for (const p of party.participants) {
+    totalGuests += p.guestCount || 1;
+    if (p.email) emailsList.push(p.email);
+    if (p.phone) phonesList.push(p.phone);
+    if (p.bringing) contributionsList.push(`${p.name}: ${p.bringing}`);
+  }
+
+  const emails = emailsList.join(", ");
+  const phones = phonesList.join(", ");
+  const contributions = contributionsList.join("\n");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voisinons.fr";
   const publicUrl = `${appUrl}/${party.slug}`;

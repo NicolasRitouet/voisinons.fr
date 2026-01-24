@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { parties, participants, partyUpdates, discussionChannels, needs } from "@/lib/db/schema";
 import { sendPartyCreatedEmail } from "@/lib/email";
@@ -18,12 +19,8 @@ import {
   type DeleteChannelInput,
 } from "@/lib/validations/channel";
 import { eq } from "drizzle-orm";
-import { randomBytes } from "crypto";
+import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
-
-function generateToken(): string {
-  return randomBytes(32).toString("hex");
-}
 
 export async function createParty(data: CreatePartyInput) {
   const validated = createPartySchema.safeParse(data);
@@ -149,7 +146,9 @@ export async function checkSlugAvailability(slug: string): Promise<boolean> {
   return !existing;
 }
 
-export async function getPartyBySlug(slug: string) {
+// React.cache() deduplicates this query within a single request
+// (e.g., when called from both generateMetadata and Page component)
+export const getPartyBySlug = cache(async (slug: string) => {
   return db.query.parties.findFirst({
     where: eq(parties.slug, slug),
     with: {
@@ -170,7 +169,7 @@ export async function getPartyBySlug(slug: string) {
       },
     },
   });
-}
+});
 
 export async function getPartyForAdmin(slug: string, token: string) {
   const party = await db.query.parties.findFirst({
@@ -202,9 +201,10 @@ export async function getPartyForAdmin(slug: string, token: string) {
 }
 
 export async function createPartyUpdate(partyId: string, token: string, content: string) {
-  // Verify admin token
+  // Verify admin token - only fetch needed columns
   const party = await db.query.parties.findFirst({
     where: eq(parties.id, partyId),
+    columns: { id: true, adminToken: true },
   });
 
   if (!party || party.adminToken !== token) {
@@ -246,8 +246,10 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
     coverImageUrl,
   } = validated.data;
 
+  // Only fetch columns needed for auth validation
   const party = await db.query.parties.findFirst({
     where: eq(parties.id, partyId),
+    columns: { id: true, adminToken: true },
   });
 
   if (!party || party.adminToken !== token) {
@@ -303,8 +305,10 @@ export async function createDiscussionChannel(data: CreateChannelInput) {
 
   const { partyId, token, type, name, url } = validated.data;
 
+  // Only fetch columns needed for auth validation
   const party = await db.query.parties.findFirst({
     where: eq(parties.id, partyId),
+    columns: { id: true, adminToken: true },
   });
 
   if (!party || party.adminToken !== token) {
@@ -341,19 +345,19 @@ export async function updateDiscussionChannel(data: UpdateChannelInput) {
 
   const { channelId, token, type, name, url } = validated.data;
 
+  // Fetch channel with its party relation in a single query
   const channel = await db.query.discussionChannels.findFirst({
     where: eq(discussionChannels.id, channelId),
+    with: {
+      party: true,
+    },
   });
 
   if (!channel) {
     return { success: false as const, error: { _form: ["Canal introuvable"] } };
   }
 
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, channel.partyId),
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!channel.party || channel.party.adminToken !== token) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 
@@ -389,19 +393,19 @@ export async function deleteDiscussionChannel(data: DeleteChannelInput) {
 
   const { channelId, token } = validated.data;
 
+  // Fetch channel with its party relation in a single query
   const channel = await db.query.discussionChannels.findFirst({
     where: eq(discussionChannels.id, channelId),
+    with: {
+      party: true,
+    },
   });
 
   if (!channel) {
     return { success: false as const, error: { _form: ["Canal introuvable"] } };
   }
 
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, channel.partyId),
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!channel.party || channel.party.adminToken !== token) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 

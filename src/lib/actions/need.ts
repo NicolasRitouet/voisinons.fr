@@ -22,8 +22,10 @@ export async function createNeedCategory(data: CreateNeedInput) {
 
   const { partyId, token, category, description } = validated.data;
 
+  // Validate token inline - only fetch if token matches
   const party = await db.query.parties.findFirst({
     where: eq(parties.id, partyId),
+    columns: { id: true, adminToken: true },
   });
 
   if (!party || party.adminToken !== token) {
@@ -59,19 +61,19 @@ export async function deleteNeedCategory(data: DeleteNeedInput) {
 
   const { needId, token } = validated.data;
 
+  // Single query with party relation instead of two sequential queries
   const need = await db.query.needs.findFirst({
     where: eq(needs.id, needId),
+    with: {
+      party: true,
+    },
   });
 
   if (!need) {
     return { success: false as const, error: { _form: ["Catégorie introuvable"] } };
   }
 
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, need.partyId),
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!need.party || need.party.adminToken !== token) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 
@@ -28,7 +28,9 @@ export function AdminTabs({ tabs, defaultTabId, children }: AdminTabsProps) {
   const initialTabId = defaultTabId ?? tabs[0]?.id ?? "";
   const [activeId, setActiveId] = useState(initialTabId);
 
-  const panels = useMemo(() => React.Children.toArray(children), [children]);
+  // No useMemo needed - React.Children.toArray is cheap and
+  // children reference changes on every render anyway
+  const panels = React.Children.toArray(children);
 
   return (
     <div className="space-y-6">

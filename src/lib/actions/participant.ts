@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { participants, parties } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { randomBytes } from "crypto";
+import { generateToken } from "@/lib/crypto";
 import { sendParticipantEditEmail } from "@/lib/email";
 
 const joinPartySchema = z.object({
@@ -28,7 +28,7 @@ export async function joinParty(data: JoinPartyInput) {
     };
   }
 
-  const editToken = randomBytes(32).toString("hex");
+  const editToken = generateToken();
 
   try {
     const [participant] = await db
