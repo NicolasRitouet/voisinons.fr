@@ -10,6 +10,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "db:generate": "keyway run -e development -- drizzle-kit generate",
     "db:migrate": "keyway run -e development -- drizzle-kit migrate",
     "db:push": "keyway run -e development -- drizzle-kit push",
@@ -44,6 +46,7 @@
   },
   "devDependencies": {
     "@keywaysh/cli": "^0.5.3",
+    "@playwright/test": "^1.58.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
