@@ -7,13 +7,17 @@ import { db } from "@/lib/db";
 import { parties } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PartyPoster } from "@/lib/pdf/party-poster";
+import { resolveAdminToken } from "@/lib/auth/admin-session";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const token = request.nextUrl.searchParams.get("token");
+  // Backward-compat: still accept ?token= for older bookmarks/email clients,
+  // but prefer the httpOnly cookie set by /[slug]/admin.
+  const tokenFromQuery = request.nextUrl.searchParams.get("token");
+  const token = await resolveAdminToken(slug, tokenFromQuery);
 
   if (!token) {
     return NextResponse.json({ error: "Token requis" }, { status: 401 });

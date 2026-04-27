@@ -191,7 +191,9 @@ export function CreatePartyForm() {
               Important : conservez ce lien admin
             </p>
             <p className="text-sm text-yellow-700 mb-2">
-              Ce lien vous permet de gérer votre fête. Il vous a également été envoyé par email.
+              Ce lien (envoyé aussi par email) contient un secret qui donne accès à
+              l&apos;administration de votre fête.{" "}
+              <strong>Ne le partagez pas publiquement.</strong>
             </p>
             <code className="text-xs bg-yellow-100 p-2 rounded block break-all">
               voisinons.fr/{successData.slug}/admin?token={successData.adminToken}
@@ -206,11 +208,7 @@ export function CreatePartyForm() {
             </Button>
             <Button
               variant="outline"
-              onClick={() =>
-                router.push(
-                  `/${successData.slug}/admin?token=${successData.adminToken}`
-                )
-              }
+              onClick={() => router.push(`/${successData.slug}/admin`)}
             >
               Accéder à l&apos;administration
             </Button>

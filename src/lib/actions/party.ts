@@ -21,6 +21,7 @@ import {
 import { eq } from "drizzle-orm";
 import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
+import { setAdminSessionCookie } from "@/lib/auth/admin-session";
 
 export async function createParty(data: CreatePartyInput) {
   const validated = createPartySchema.safeParse(data);
@@ -106,6 +107,10 @@ export async function createParty(data: CreatePartyInput) {
 
       return newParty;
     });
+
+    // Set the admin session cookie so the creator can navigate to the admin
+    // dashboard without the token in the URL.
+    await setAdminSessionCookie(party.slug, party.adminToken);
 
     // Send confirmation email (awaited to ensure Vercel doesn't kill the function)
     try {

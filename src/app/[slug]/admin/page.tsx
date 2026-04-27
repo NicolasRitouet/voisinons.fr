@@ -1,9 +1,10 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getPartyForAdmin } from "@/lib/actions/party";
+import { getAdminTokenFromCookie } from "@/lib/auth/admin-session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,16 @@ export async function generateMetadata({
 
 export default async function AdminPage({ params, searchParams }: AdminPageProps) {
   const { slug } = await params;
-  const { token } = await searchParams;
+  const { token: tokenFromUrl } = await searchParams;
+
+  // If the token is in the URL (first visit from email link), hand off to the
+  // route handler which sets the httpOnly cookie and redirects to a clean URL.
+  // Cookie mutation isn't allowed from Server Components.
+  if (tokenFromUrl) {
+    redirect(`/api/admin-session/${slug}?token=${encodeURIComponent(tokenFromUrl)}`);
+  }
+
+  const token = await getAdminTokenFromCookie(slug);
 
   if (!token) {
     redirect(`/${slug}`);
@@ -44,7 +54,10 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
   const party = await getPartyForAdmin(slug, token);
 
   if (!party) {
-    notFound();
+    // Cookie points to a deleted party or a rotated token — hand off to the
+    // route handler to clear the orphaned cookie before bouncing to the public
+    // page.
+    redirect(`/api/admin-session/${slug}?clear=1`);
   }
 
   const dateStart = new Date(party.dateStart);
@@ -132,7 +145,7 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
 
               <div className="flex flex-wrap gap-3">
                 <Button asChild className="bg-neighbor-orange hover:bg-neighbor-orange/90">
-                  <a href={`/api/party/${party.slug}/poster?token=${token}`} download>
+                  <a href={`/api/party/${party.slug}/poster`} download>
                     Télécharger l&apos;affiche PDF
                   </a>
                 </Button>
@@ -177,8 +190,12 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                 </div>
               </div>
               <div className="text-xs text-gray-500">
-                Lien admin :
-                <div className="break-all bg-gray-50 p-2 rounded mt-1 text-neighbor-stone">
+                Lien admin{" "}
+                <span className="text-amber-700">
+                  (secret &mdash; ne pas partager)
+                </span>{" "}
+                :
+                <div className="break-all bg-amber-50 border border-amber-200 p-2 rounded mt-1 text-neighbor-stone">
                   {adminUrl}
                 </div>
               </div>

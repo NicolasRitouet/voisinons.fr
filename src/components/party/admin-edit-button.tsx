@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { getAdminToken } from "@/lib/storage/admin-parties";
 import { Button } from "@/components/ui/button";
 
@@ -19,16 +18,19 @@ export function AdminEditButton({ slug }: AdminEditButtonProps) {
   if (!adminToken) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <form
+      method="POST"
+      action={`/api/admin-session/${slug}`}
+      className="fixed top-4 right-4 z-50"
+    >
+      <input type="hidden" name="token" value={adminToken} />
       <Button
-        asChild
+        type="submit"
         size="sm"
         className="bg-neighbor-orange hover:bg-neighbor-orange/90 text-white shadow-lg"
       >
-        <Link href={`/${slug}/admin?token=${adminToken}`}>
-          Modifier l&apos;événement
-        </Link>
+        Modifier l&apos;événement
       </Button>
-    </div>
+    </form>
   );
 }
