@@ -29,6 +29,7 @@ export async function generateMetadata({
   return {
     title: `Participer à ${party.name} | Voisinons.fr`,
     description: party.description || `Inscrivez-vous à "${party.name}".`,
+    robots: { index: false, follow: false },
   };
 }
 

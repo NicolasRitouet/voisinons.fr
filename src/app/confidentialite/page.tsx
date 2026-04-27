@@ -4,6 +4,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Politique de Confidentialité - Voisinons.fr",
   description: "Politique de confidentialité et protection des données personnelles de Voisinons.fr",
+  robots: { index: false, follow: true },
 };
 
 export default function ConfidentialitePage() {

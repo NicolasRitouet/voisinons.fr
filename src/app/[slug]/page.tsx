@@ -34,6 +34,7 @@ export async function generateMetadata({
   return {
     title: `${party.name} | Voisinons.fr`,
     description: party.description || `Rejoignez la fête "${party.name}" !`,
+    robots: { index: false, follow: false },
     openGraph: {
       title: party.name,
       description: party.description || `Rejoignez la fête "${party.name}" !`,

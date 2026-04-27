@@ -20,25 +20,52 @@ const gloria = Gloria_Hallelujah({
   weight: "400",
 });
 
+const SITE_URL = "https://voisinons.fr";
+const SITE_NAME = "Voisinons.fr";
+const DEFAULT_TITLE =
+  "Fête des Voisins 2026 : créez votre affiche gratuite en 30 secondes";
+const DEFAULT_DESCRIPTION =
+  "Outil 100% gratuit pour organiser la Fête des Voisins du 29 mai 2026. Génère votre affiche PDF avec QR code, coordonne les plats et invite vos voisins. Sans inscription, RGPD.";
+
 export const metadata: Metadata = {
-  title: "Voisinons.fr | Organisez votre Fête des Voisins simplement",
-  description:
-    "L'outil gratuit pour organiser la parfaite Fête des Voisins. Générez vos affiches, coordonnez les plats, et trouvez de l'aide pour vos démarches administratives.",
-  keywords: [
-    "fête des voisins",
-    "fête de quartier",
-    "voisins",
-    "organisation",
-    "affiche",
-    "QR code",
-  ],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: DEFAULT_TITLE,
+    template: "%s | Voisinons.fr",
+  },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Voisinons.fr | Organisez votre Fête des Voisins simplement",
-    description:
-      "L'outil gratuit pour organiser la parfaite Fête des Voisins. Générez vos affiches, coordonnez les plats, et trouvez de l'aide pour vos démarches administratives.",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
     locale: "fr_FR",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: SITE_NAME,
+  url: SITE_URL,
+  applicationCategory: "LifestyleApplication",
+  operatingSystem: "Any",
+  inLanguage: "fr-FR",
+  description: DEFAULT_DESCRIPTION,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
 };
 
 export default function RootLayout({
@@ -51,6 +78,10 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${outfit.variable} ${gloria.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         {children}
       </body>
     </html>

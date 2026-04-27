@@ -4,6 +4,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Mentions Légales - Voisinons.fr",
   description: "Mentions légales du site Voisinons.fr",
+  robots: { index: false, follow: true },
 };
 
 export default function MentionsLegalesPage() {

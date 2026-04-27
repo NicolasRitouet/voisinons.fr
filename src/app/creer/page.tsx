@@ -3,8 +3,17 @@ import Link from "next/link";
 import { CreatePartyForm } from "@/components/create-party-form";
 
 export const metadata: Metadata = {
-  title: "Créer une fête | Voisinons.fr",
-  description: "Créez votre fête des voisins en quelques clics",
+  title: "Créer une affiche de Fête des Voisins gratuite (PDF + QR code)",
+  description:
+    "Remplissez le formulaire et obtenez en 30 secondes votre page web, votre affiche PDF imprimable et votre QR code pour la Fête des Voisins. 100% gratuit, sans inscription.",
+  alternates: { canonical: "/creer" },
+  openGraph: {
+    title: "Créer une affiche de Fête des Voisins gratuite — Voisinons.fr",
+    description:
+      "Page web personnalisée + affiche PDF + QR code en 30 secondes. Gratuit, sans inscription.",
+    url: "/creer",
+    type: "website",
+  },
 };
 
 export default function CreatePartyPage() {

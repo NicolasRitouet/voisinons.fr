@@ -4,6 +4,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation - Voisinons.fr",
   description: "Conditions générales d'utilisation du service Voisinons.fr",
+  robots: { index: false, follow: true },
 };
 
 export default function CGUPage() {
