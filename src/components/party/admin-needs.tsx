@@ -170,7 +170,7 @@ export function AdminNeeds({ partyId, token, needs }: AdminNeedsProps) {
                     />
                   </FormControl>
                   <FormDescription>
-                    Pour "Autre", vous pouvez personnaliser le nom.
+                    Pour &quot;Autre&quot;, vous pouvez personnaliser le nom.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

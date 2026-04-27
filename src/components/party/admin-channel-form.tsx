@@ -147,7 +147,7 @@ export function AdminChannelForm({ partyId, token }: AdminChannelFormProps) {
                   <Input placeholder="https://" {...field} />
                 </FormControl>
                 <FormDescription>
-                  Collez le lien d'invitation (WhatsApp, Signal, etc.).
+                  Collez le lien d&apos;invitation (WhatsApp, Signal, etc.).
                 </FormDescription>
                 <FormMessage />
               </FormItem>

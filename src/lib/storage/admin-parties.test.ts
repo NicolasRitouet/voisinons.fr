@@ -140,16 +140,16 @@ describe("admin-parties storage", () => {
     });
 
     it("should handle localStorage being unavailable", () => {
-      const originalGetItem = localStorage.getItem;
-      const originalSetItem = localStorage.setItem;
-
-      // Mock localStorage to throw
-      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-        throw new Error("localStorage unavailable");
-      });
-      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-        throw new Error("localStorage unavailable");
-      });
+      const getSpy = vi
+        .spyOn(localStorage, "getItem")
+        .mockImplementation(() => {
+          throw new Error("localStorage unavailable");
+        });
+      const setSpy = vi
+        .spyOn(localStorage, "setItem")
+        .mockImplementation(() => {
+          throw new Error("localStorage unavailable");
+        });
 
       // Clear cache to ensure fresh reads
       _clearCache();
@@ -159,9 +159,8 @@ describe("admin-parties storage", () => {
       expect(() => getAdminToken("ma-fete")).not.toThrow();
       expect(getAllAdminParties()).toEqual([]);
 
-      // Restore
-      Storage.prototype.getItem = originalGetItem;
-      Storage.prototype.setItem = originalSetItem;
+      getSpy.mockRestore();
+      setSpy.mockRestore();
     });
   });
 });

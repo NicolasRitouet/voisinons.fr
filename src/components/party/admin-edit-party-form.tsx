@@ -155,7 +155,7 @@ export function AdminEditPartyForm({
                     />
                   </FormControl>
                   <FormDescription>
-                    Choisissez une adresse dans la liste pour améliorer l'affichage.
+                    Choisissez une adresse dans la liste pour améliorer l&apos;affichage.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

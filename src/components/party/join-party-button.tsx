@@ -30,6 +30,9 @@ export function JoinPartyButton({ partySlug }: JoinPartyButtonProps) {
 
     const storedToken = getParticipantToken(partySlug);
     const storedId = getParticipantId(partySlug);
+    // Synchronizing from localStorage (external store) — the linter's general
+    // warning against setState-in-effect doesn't apply to this pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasRegistration(Boolean(storedToken || storedId));
   }, [partySlug, searchParams, router]);
 
