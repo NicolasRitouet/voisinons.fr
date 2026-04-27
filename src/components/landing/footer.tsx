@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer className="bg-neighbor-dark text-white py-12 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
-        <div className="col-span-1 md:col-span-2">
+        <div className="col-span-1 md:col-span-1">
           <Link href="/" className="flex items-center gap-2 mb-4">
             <Image
               src="/logo.jpg"
@@ -24,6 +24,43 @@ export function Footer() {
             Fait avec &#10084; pour des quartiers plus vivants. Un outil gratuit
             pour reconnecter les voisins entre eux.
           </p>
+        </div>
+
+        <div>
+          <h4 className="font-bold font-[family-name:var(--font-space-grotesk)] mb-4 text-gray-200">
+            Ressources
+          </h4>
+          <ul className="space-y-2 text-sm text-gray-400 font-[family-name:var(--font-outfit)]">
+            <li>
+              <Link
+                href="/fete-des-voisins-2026"
+                className="hover:text-neighbor-orange"
+              >
+                Date Fête des Voisins 2026
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/guide-fete-des-voisins-2026"
+                className="hover:text-neighbor-orange"
+              >
+                Guide d&apos;organisation
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/affiches-fete-des-voisins"
+                className="hover:text-neighbor-orange"
+              >
+                Affiches gratuites
+              </Link>
+            </li>
+            <li>
+              <Link href="/creer" className="hover:text-neighbor-orange">
+                Créer ma fête
+              </Link>
+            </li>
+          </ul>
         </div>
 
         <div>
@@ -71,14 +108,12 @@ export function Footer() {
               </a>
             </li>
             <li>
-              <Link href="#" className="hover:text-neighbor-orange">
-                Kit d&apos;organisation
-              </Link>
-            </li>
-            <li>
-              <Link href="#" className="hover:text-neighbor-orange">
+              <a
+                href="mailto:contact@voisinons.fr"
+                className="hover:text-neighbor-orange"
+              >
                 Contact
-              </Link>
+              </a>
             </li>
           </ul>
         </div>
