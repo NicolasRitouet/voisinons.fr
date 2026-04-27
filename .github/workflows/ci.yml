@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Dummy values so env validation passes during build/test.
+  # Real secrets are injected via Vercel at deploy time.
+  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+  UPLOADTHING_TOKEN: ci-dummy-token
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:run
+
+  migrations-check:
+    name: Migrations up-to-date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate migration files consistency
+        run: npx drizzle-kit check
+      - name: Detect schema changes not committed as a migration
+        run: npx drizzle-kit generate --name ci-check
+      - name: Fail if a new migration file was produced
+        run: |
+          if [[ -n $(git status --porcelain drizzle/) ]]; then
+            echo "::error::Schema changes detected without a corresponding migration."
+            echo "Run 'npm run db:generate' locally and commit the resulting files."
+            git status drizzle/
+            git diff drizzle/
+            exit 1
+          fi
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          NODE_ENV: production
