@@ -73,8 +73,8 @@ npx @keywaysh/cli pull -e development
 # Créer la base de données PostgreSQL
 createdb voisinons
 
-# Appliquer le schéma
-npm run db:push
+# Appliquer les migrations
+npm run db:migrate
 ```
 
 6. Lancer le serveur de développement :
@@ -129,10 +129,83 @@ Les scripts npm (`dev`, `build`, `start`, `db:*`) utilisent automatiquement Keyw
 | `npm run test` | Lancer les tests (watch mode) |
 | `npm run test:run` | Lancer les tests une fois |
 | `npm run test:coverage` | Tests avec couverture |
-| `npm run db:generate` | Générer les migrations Drizzle |
-| `npm run db:migrate` | Appliquer les migrations |
-| `npm run db:push` | Synchroniser le schéma (dev) |
+| `npm run db:generate` | Générer une nouvelle migration depuis le schéma |
+| `npm run db:migrate` | Appliquer les migrations en local (dev) |
+| `npm run db:migrate:prod` | Appliquer les migrations en production |
+| `npm run db:bootstrap` | Marquer les migrations existantes comme appliquées (one-shot) |
+| `npm run db:bootstrap:prod` | Idem en production |
+| `npm run db:push` | Synchroniser le schéma sans migration (dev uniquement, à éviter) |
 | `npm run db:studio` | Ouvrir Drizzle Studio |
+
+## Monitoring (Sentry)
+
+Le SDK `@sentry/nextjs` est intégré et **inactif tant que `SENTRY_DSN` n'est pas défini** — zéro impact en local.
+
+### Activer Sentry
+
+1. Créer un projet Sentry (`Next.js`).
+2. Ajouter dans Vercel (et Keyway pour le local si besoin) :
+
+| Variable | Où | Visibilité |
+|---|---|---|
+| `SENTRY_DSN` | Server runtime | Privé |
+| `NEXT_PUBLIC_SENTRY_DSN` | Client runtime | **Public** (exposé au navigateur) |
+| `SENTRY_AUTH_TOKEN` | Build-time uniquement | Privé — pour upload des sourcemaps |
+| `SENTRY_ORG`, `SENTRY_PROJECT` | Build-time | Privé |
+
+3. Ajouter `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` dans les secrets GitHub Actions pour que la CI uploade les sourcemaps lors des builds.
+
+### Ce qui est configuré
+
+- **Error monitoring** côté serveur (server actions, API routes), edge et client (`global-error.tsx`).
+- **Tracing** activé à 10 % en production.
+- **Session Replay** : 0 % des sessions normales, 100 % des sessions avec erreur (champs masqués par défaut).
+- **Logs structurés** (`Sentry.logger.*`).
+- **Tunnel `/monitoring`** pour bypasser les bloqueurs de pub.
+- `sendDefaultPii: false` — IPs et headers ne sont **pas** envoyés (RGPD). À reconsidérer après déclaration de Sentry comme sous-traitant DPO.
+
+## Intégration continue (CI)
+
+GitHub Actions exécute les checks suivants sur chaque PR vers `main` et chaque push sur `main` (`.github/workflows/ci.yml`) :
+
+- **Lint** — `npm run lint`
+- **Type check** — `npx tsc --noEmit`
+- **Unit tests** — `npm run test:run`
+- **Migrations up-to-date** — vérifie qu'aucune modification de `src/lib/db/schema.ts` n'a été faite sans la migration Drizzle correspondante. Si la CI échoue ici, lancer `npm run db:generate` en local et committer les fichiers générés.
+- **Build** — `npm run build` avec des variables d'environnement factices (les vrais secrets sont injectés par Vercel au moment du déploiement).
+
+Les tests E2E Playwright ne sont pas encore intégrés à la CI (ils nécessitent une base PostgreSQL et la configuration des secrets Keyway). Lancer en local : `npm run test:e2e`.
+
+## Migrations de base de données
+
+### Workflow normal
+
+```bash
+# 1. Modifier le schéma dans src/lib/db/schema.ts
+# 2. Générer la migration
+npm run db:generate
+# 3. Vérifier le SQL produit dans drizzle/
+# 4. Appliquer en local
+npm run db:migrate
+# 5. En prod (après merge)
+npm run db:migrate:prod
+```
+
+### Bootstrap d'une base existante (one-shot)
+
+Si la base de production a été créée avec `db:push` (sans historique de migrations),
+il faut marquer la migration baseline comme déjà appliquée pour éviter que
+`db:migrate` essaie de recréer les tables :
+
+```bash
+npm run db:bootstrap:prod
+```
+
+Le script crée la table `drizzle.__drizzle_migrations` et y insère le hash de
+chaque migration présente dans `drizzle/`. Il est idempotent : on peut le relancer
+sans risque, il ignore les migrations déjà tracées.
+
+À faire **une seule fois** par environnement, après quoi le workflow normal s'applique.
 
 ## Structure du projet
 
