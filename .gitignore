@@ -34,9 +34,6 @@ yarn-error.log*
 .env*
 !.env.example
 
-# drizzle
-/drizzle/meta
-
 # vercel
 .vercel
 
@@ -49,3 +46,4 @@ next-env.d.ts
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright-mcp/
