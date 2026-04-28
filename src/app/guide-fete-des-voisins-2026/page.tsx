@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
+import { MairieAstuce } from "@/components/landing/mairie-astuce";
 
 const PAGE_URL = "https://voisinons.fr/guide-fete-des-voisins-2026";
 const TITLE = "Comment organiser la Fête des Voisins 2026 : guide en 7 étapes";
@@ -191,6 +192,10 @@ export default function GuidePage() {
                   {step.title}
                 </h2>
                 <p className="text-lg whitespace-pre-line">{step.text}</p>
+
+                {step.title === "Faire les démarches administratives" && (
+                  <MairieAstuce />
+                )}
               </section>
             ))}
 

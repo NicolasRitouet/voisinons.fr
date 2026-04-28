@@ -149,18 +149,19 @@ export function HowItWorksSection() {
               </span>
             </div>
             <h3 className="font-[family-name:var(--font-space-grotesk)] font-bold text-xl text-neighbor-blue mb-2">
-              Aide Administrative
+              Votre mairie en un clic
             </h3>
-            <p className="font-[family-name:var(--font-outfit)] text-gray-600 mb-6 grow">
-              Besoin de fermer la rue ? De louer des tables à la mairie ? Nous vous
-              fournissons les modèles de lettres et les contacts utiles pour
-              faciliter vos démarches officielles.
+            <p className="font-[family-name:var(--font-outfit)] text-gray-600 mb-4 grow">
+              Voisinons connaît l&apos;email et le téléphone des{" "}
+              <strong className="text-neighbor-blue">34&nbsp;000 mairies</strong>{" "}
+              françaises. Brouillon de demande de kit prérempli, prêt à envoyer
+              en 30 secondes.
             </p>
             <Link
-              href="#"
+              href="/kit-fete-des-voisins-2026"
               className="inline-flex items-center text-sm font-bold text-neighbor-blue hover:underline"
             >
-              Télécharger les modèles{" "}
+              Trouver ma mairie{" "}
               <span className="ml-2 text-xs">&rarr;</span>
             </Link>
           </div>

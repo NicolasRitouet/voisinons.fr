@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
+import { MairieMailBlock } from "@/components/landing/mairie-mail-block";
 
 const PAGE_URL = "https://voisinons.fr/kit-fete-des-voisins-2026";
 const TITLE =
@@ -341,22 +342,12 @@ export default function KitPage() {
                 ou <strong>relations habitants</strong> selon les communes.
               </p>
               <p className="text-lg mt-4">
-                Modèle de mail à envoyer (à adapter) :
+                Sélectionnez votre commune ci-dessous pour récupérer l&apos;email officiel
+                de la mairie et un brouillon de mail prérempli avec son nom :
               </p>
-              <pre className="mt-4 bg-neighbor-cream rounded-2xl p-5 font-[family-name:var(--font-outfit)] text-sm md:text-base text-gray-800 whitespace-pre-wrap leading-relaxed border border-neighbor-stone/5">
-{`Bonjour,
-
-Je m'appelle [Prénom Nom] et j'organise une Fête des Voisins le vendredi 29 mai 2026 à [adresse], avec une trentaine de voisins attendus.
-
-La mairie de [ville] propose-t-elle un kit (affiches, gobelets, ballons) à destination des organisateurs ? Si oui, comment le récupérer ?
-
-J'aurais également besoin de savoir si une autorisation d'occupation temporaire de la voie publique est nécessaire pour [préciser : fermeture d'une portion de rue / cour intérieure / hall].
-
-Merci par avance pour votre retour,
-Bien cordialement,
-[Prénom Nom]
-[Téléphone]`}
-              </pre>
+              <div className="mt-6">
+                <MairieMailBlock />
+              </div>
             </section>
 
             <section>

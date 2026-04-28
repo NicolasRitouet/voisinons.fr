@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
+import { MairieAstuce } from "@/components/landing/mairie-astuce";
 
 const PAGE_URL = "https://voisinons.fr/fete-des-voisins-2026";
 const TITLE = "Fête des Voisins 2026 : date officielle, origine et comment l'organiser";
@@ -257,6 +258,8 @@ export default function FeteDesVoisins2026Page() {
                 tables et bancs si vous fermez une portion de rue. Il suffit généralement
                 d&apos;envoyer un email au service vie de quartier ou démocratie locale en avril.
               </p>
+
+              <MairieAstuce />
             </section>
 
             <section className="bg-neighbor-stone text-white rounded-3xl p-8 md:p-12">
