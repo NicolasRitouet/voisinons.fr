@@ -1,9 +1,8 @@
-import { expect, afterEach, vi } from "vitest";
+import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
-import * as matchers from "@testing-library/jest-dom/matchers";
-
-// Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers);
+// Side-effect import: extends both Vitest's expect at runtime AND its
+// TypeScript types so matchers like toBeInTheDocument are recognized.
+import "@testing-library/jest-dom/vitest";
 
 // Node 24 ships a native `localStorage` driven by `--localstorage-file` that
 // gets injected into globals when @sentry/nextjs is in the dependency tree.
