@@ -245,10 +245,10 @@ export default function GuidePage() {
                 <li>
                   →{" "}
                   <Link
-                    href="/affiches-fete-des-voisins"
+                    href="/modeles-invitation"
                     className="text-neighbor-orange font-bold hover:underline"
                   >
-                    Affiches gratuites à imprimer
+                    Modèles d&apos;invitation à copier-coller
                   </Link>
                 </li>
                 <li>

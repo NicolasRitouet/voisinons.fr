@@ -49,10 +49,10 @@ export function Footer() {
             </li>
             <li>
               <Link
-                href="/affiches-fete-des-voisins"
+                href="/modeles-invitation"
                 className="hover:text-neighbor-orange"
               >
-                Affiches gratuites
+                Modèles d&apos;invitation
               </Link>
             </li>
             <li>

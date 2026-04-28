@@ -31,7 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
-      url: `${SITE_URL}/affiches-fete-des-voisins`,
+      url: `${SITE_URL}/modeles-invitation`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.8,
