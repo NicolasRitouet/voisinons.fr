@@ -41,6 +41,14 @@ export function Footer() {
             </li>
             <li>
               <Link
+                href="/kit-fete-des-voisins-2026"
+                className="hover:text-neighbor-orange"
+              >
+                Kit Fête des Voisins
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/guide-fete-des-voisins-2026"
                 className="hover:text-neighbor-orange"
               >

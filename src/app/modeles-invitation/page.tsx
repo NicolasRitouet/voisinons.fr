@@ -436,6 +436,15 @@ export default function ModelesInvitationPage() {
                 <li>
                   →{" "}
                   <Link
+                    href="/kit-fete-des-voisins-2026"
+                    className="text-neighbor-orange font-bold hover:underline"
+                  >
+                    Kit officiel Fête des Voisins (téléchargement gratuit)
+                  </Link>
+                </li>
+                <li>
+                  →{" "}
+                  <Link
                     href="/fete-des-voisins-2026"
                     className="text-neighbor-orange font-bold hover:underline"
                   >

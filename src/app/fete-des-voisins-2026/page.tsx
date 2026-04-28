@@ -236,6 +236,13 @@ export default function FeteDesVoisins2026Page() {
                 >
                   Voir le guide complet en 7 étapes →
                 </Link>
+                <br />
+                <Link
+                  href="/kit-fete-des-voisins-2026"
+                  className="text-neighbor-orange font-bold hover:underline"
+                >
+                  Comment obtenir le kit officiel gratuit →
+                </Link>
               </p>
             </section>
 
