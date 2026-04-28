@@ -19,6 +19,7 @@ const securityHeaders = {
   "Content-Security-Policy": [
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://panoramax.ign.fr https://*.panoramax.xyz https://api-adresse.data.gouv.fr https://*.ufs.sh https://utfs.io https://*.uploadthing.com",
     "font-src 'self' data:",
