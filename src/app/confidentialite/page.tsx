@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Politique de Confidentialité - Voisinons.fr",
+  title: "Politique de Confidentialité",
   description: "Politique de confidentialité et protection des données personnelles de Voisinons.fr",
   robots: { index: false, follow: true },
 };

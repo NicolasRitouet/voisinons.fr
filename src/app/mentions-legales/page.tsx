@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Mentions Légales - Voisinons.fr",
+  title: "Mentions Légales",
   description: "Mentions légales du site Voisinons.fr",
   robots: { index: false, follow: true },
 };

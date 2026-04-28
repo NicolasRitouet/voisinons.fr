@@ -50,9 +50,7 @@ export const metadata: Metadata = {
     description: DEFAULT_DESCRIPTION,
   },
   robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+    googleBot: { "max-image-preview": "large" },
   },
 };
 
