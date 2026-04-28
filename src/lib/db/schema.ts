@@ -8,6 +8,7 @@ import {
   integer,
   pgEnum,
   decimal,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -136,6 +137,27 @@ export const adminChecklists = pgTable("admin_checklists", {
   checkedAt: timestamp("checked_at", { withTimezone: true }),
 });
 
+export const mairies = pgTable(
+  "mairies",
+  {
+    codeInsee: varchar("code_insee", { length: 5 }).primaryKey(),
+    nom: varchar("nom", { length: 255 }).notNull(),
+    nomNormalise: varchar("nom_normalise", { length: 255 }).notNull(),
+    codePostal: varchar("code_postal", { length: 5 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    telephone: varchar("telephone", { length: 50 }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("mairies_nom_normalise_idx").on(table.nomNormalise),
+    // A GIN index with gin_trgm_ops also exists for ILIKE %q% queries; it is
+    // declared manually in drizzle/0001_mairies.sql because drizzle-kit cannot
+    // emit pg_trgm operator classes. Keep the two in sync.
+  ]
+);
+
 export const partyUpdates = pgTable("party_updates", {
   id: uuid("id").defaultRandom().primaryKey(),
   partyId: uuid("party_id")
@@ -222,3 +244,5 @@ export type AdminChecklist = typeof adminChecklists.$inferSelect;
 export type NewAdminChecklist = typeof adminChecklists.$inferInsert;
 export type PartyUpdate = typeof partyUpdates.$inferSelect;
 export type NewPartyUpdate = typeof partyUpdates.$inferInsert;
+export type Mairie = typeof mairies.$inferSelect;
+export type NewMairie = typeof mairies.$inferInsert;

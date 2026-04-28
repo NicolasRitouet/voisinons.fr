@@ -8,6 +8,20 @@
       "when": 1777293869467,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777368874723,
+      "tag": "0001_mairies",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777369332650,
+      "tag": "0002_mairies_telephone",
+      "breakpoints": true
     }
   ]
 }

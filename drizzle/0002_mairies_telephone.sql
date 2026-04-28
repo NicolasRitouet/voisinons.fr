@@ -1,0 +1,1 @@
+ALTER TABLE "mairies" ADD COLUMN "telephone" varchar(50);

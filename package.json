@@ -17,6 +17,8 @@
     "db:migrate:prod": "keyway run -e production -- drizzle-kit migrate",
     "db:bootstrap": "keyway run -e development -- tsx scripts/db-bootstrap.ts",
     "db:bootstrap:prod": "keyway run -e production -- tsx scripts/db-bootstrap.ts",
+    "db:populate-mairies": "keyway run -e development -- tsx scripts/populate-mairies.ts",
+    "db:populate-mairies:prod": "keyway run -e production -- tsx scripts/populate-mairies.ts",
     "db:push": "keyway run -e development -- drizzle-kit push",
     "db:studio": "keyway run -e development -- drizzle-kit studio"
   },
