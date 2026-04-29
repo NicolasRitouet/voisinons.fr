@@ -172,6 +172,15 @@ const faqs = [
   },
 ];
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 2, name: "Modèles d'invitation", item: PAGE_URL },
+  ],
+};
+
 const itemListJsonLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
@@ -268,6 +277,10 @@ export default function ModelesInvitationPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"

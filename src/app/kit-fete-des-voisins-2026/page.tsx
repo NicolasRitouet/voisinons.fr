@@ -62,6 +62,15 @@ const faqJsonLd = {
   })),
 };
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 2, name: "Kit Fête des Voisins 2026", item: PAGE_URL },
+  ],
+};
+
 const webPageJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
@@ -75,9 +84,7 @@ const webPageJsonLd = {
     url: "https://voisinons.fr",
   },
   about: {
-    "@type": "Event",
-    name: "Fête des Voisins 2026",
-    startDate: "2026-05-29",
+    "@id": "https://voisinons.fr/fete-des-voisins-2026#event",
   },
 };
 
@@ -129,6 +136,10 @@ export default function KitPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"

@@ -66,6 +66,16 @@ const websiteJsonLd = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
 };
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${SITE_URL}#organization`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.jpg`,
+  sameAs: ["https://github.com/NicolasRitouet/voisinons.fr"],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -79,6 +89,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         {children}
       </body>

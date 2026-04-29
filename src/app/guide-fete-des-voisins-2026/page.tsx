@@ -59,6 +59,15 @@ const steps = [
   },
 ];
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 2, name: "Guide Fête des Voisins 2026", item: PAGE_URL },
+  ],
+};
+
 const howToJsonLd = {
   "@context": "https://schema.org",
   "@type": "HowTo",
@@ -126,6 +135,10 @@ export default function GuidePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"

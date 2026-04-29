@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 const eventJsonLd = {
   "@context": "https://schema.org",
   "@type": "Event",
+  "@id": `${PAGE_URL}#event`,
   name: "Fête des Voisins 2026",
   description:
     "Édition 2026 de la Fête des Voisins, événement national pour rencontrer ses voisins autour d'un repas partagé.",
@@ -35,14 +36,40 @@ const eventJsonLd = {
     "@type": "Country",
     name: "France",
   },
+  image: [
+    "https://voisinons.fr/affiche-officielle-fdv-2026.jpg",
+    "https://voisinons.fr/affiche-fete-des-voisins.png",
+  ],
   organizer: {
     "@type": "Organization",
-    name: "Voisinons.fr",
-    url: "https://voisinons.fr",
+    name: "Voisins Solidaires",
+    url: "https://fetedesvoisins.fr",
+  },
+  performer: {
+    "@type": "Organization",
+    name: "Voisins Solidaires",
+    url: "https://fetedesvoisins.fr",
+  },
+  offers: {
+    "@type": "Offer",
+    url: PAGE_URL,
+    price: "0",
+    priceCurrency: "EUR",
+    availability: "https://schema.org/InStock",
+    validFrom: "2025-09-01T00:00:00+02:00",
   },
   isAccessibleForFree: true,
   inLanguage: "fr-FR",
   url: PAGE_URL,
+};
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 2, name: "Fête des Voisins 2026", item: PAGE_URL },
+  ],
 };
 
 const faqJsonLd = {
@@ -98,6 +125,10 @@ export default function FeteDesVoisins2026Page() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"
