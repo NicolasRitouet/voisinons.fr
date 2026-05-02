@@ -84,9 +84,6 @@ const webPageJsonLd = {
     name: "Voisinons.fr",
     url: SITE_URL,
   },
-  about: {
-    "@id": `${SITE_URL}/fete-des-voisins-2026#event`,
-  },
 };
 
 function OfficialPosterMockup() {
