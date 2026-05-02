@@ -4,8 +4,9 @@ import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
 import { MairieMailBlock } from "@/components/landing/mairie-mail-block";
+import { SITE_URL } from "@/lib/site";
 
-const PAGE_URL = "https://voisinons.fr/kit-fete-des-voisins-2026";
+const PAGE_URL = `${SITE_URL}/kit-fete-des-voisins-2026`;
 const TITLE =
   "Kit Fête des Voisins 2026 : comment l'obtenir gratuitement et l'utiliser";
 const DESCRIPTION =
@@ -66,7 +67,7 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 1, name: "Accueil", item: `${SITE_URL}/` },
     { "@type": "ListItem", position: 2, name: "Kit Fête des Voisins 2026", item: PAGE_URL },
   ],
 };
@@ -81,10 +82,10 @@ const webPageJsonLd = {
   isPartOf: {
     "@type": "WebSite",
     name: "Voisinons.fr",
-    url: "https://voisinons.fr",
+    url: SITE_URL,
   },
   about: {
-    "@id": "https://voisinons.fr/fete-des-voisins-2026#event",
+    "@id": `${SITE_URL}/fete-des-voisins-2026#event`,
   },
 };
 

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
 import { CopyButton } from "@/components/landing/copy-button";
+import { SITE_URL } from "@/lib/site";
 
-const PAGE_URL = "https://voisinons.fr/modeles-invitation";
+const PAGE_URL = `${SITE_URL}/modeles-invitation`;
 const TITLE =
   "Modèles d'invitation Fête des Voisins 2026 (textes prêts à copier)";
 const DESCRIPTION =
@@ -176,7 +177,7 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 1, name: "Accueil", item: `${SITE_URL}/` },
     { "@type": "ListItem", position: 2, name: "Modèles d'invitation", item: PAGE_URL },
   ],
 };

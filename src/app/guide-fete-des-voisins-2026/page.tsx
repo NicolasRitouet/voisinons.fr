@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
 import { MairieAstuce } from "@/components/landing/mairie-astuce";
+import { SITE_URL } from "@/lib/site";
 
-const PAGE_URL = "https://voisinons.fr/guide-fete-des-voisins-2026";
+const PAGE_URL = `${SITE_URL}/guide-fete-des-voisins-2026`;
 const TITLE = "Comment organiser la Fête des Voisins 2026 : guide en 7 étapes";
 const DESCRIPTION =
   "Le guide complet pour organiser une Fête des Voisins réussie le 29 mai 2026 : checklist, modèles, démarches mairie/syndic, idées repas et animations.";
@@ -63,7 +64,7 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 1, name: "Accueil", item: `${SITE_URL}/` },
     { "@type": "ListItem", position: 2, name: "Guide Fête des Voisins 2026", item: PAGE_URL },
   ],
 };

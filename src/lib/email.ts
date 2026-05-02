@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { SITE_URL } from "@/lib/site";
 
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
@@ -24,9 +25,8 @@ export async function sendPartyCreatedEmail(data: PartyCreatedEmailData) {
     return { success: false, error: "Email service not configured" };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voisinons.fr";
-  const publicUrl = `${appUrl}/${data.partySlug}`;
-  const adminUrl = `${appUrl}/${data.partySlug}/admin?token=${data.adminToken}`;
+  const publicUrl = `${SITE_URL}/${data.partySlug}`;
+  const adminUrl = `${SITE_URL}/${data.partySlug}/admin?token=${data.adminToken}`;
 
   const formattedDate = data.partyDate.toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -127,9 +127,8 @@ export async function sendParticipantEditEmail(data: ParticipantEditEmailData) {
     return { success: false, error: "Email service not configured" };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voisinons.fr";
-  const publicUrl = `${appUrl}/${data.partySlug}`;
-  const editUrl = `${appUrl}/${data.partySlug}/participer?participantToken=${data.editToken}`;
+  const publicUrl = `${SITE_URL}/${data.partySlug}`;
+  const editUrl = `${SITE_URL}/${data.partySlug}/participer?participantToken=${data.editToken}`;
 
   const formattedDate = data.partyDate.toLocaleDateString("fr-FR", {
     weekday: "long",

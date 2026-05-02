@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Outfit, Gloria_Hallelujah } from "next/font/google";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -20,7 +21,6 @@ const gloria = Gloria_Hallelujah({
   weight: "400",
 });
 
-const SITE_URL = "https://voisinons.fr";
 const SITE_NAME = "Voisinons.fr";
 const DEFAULT_TITLE =
   "Fête des Voisins 2026 : créez votre affiche gratuite en 30 secondes";

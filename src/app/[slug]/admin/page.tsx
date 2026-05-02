@@ -16,6 +16,7 @@ import { AdminEditPartyForm } from "@/components/party/admin-edit-party-form";
 import { AdminChannelForm } from "@/components/party/admin-channel-form";
 import { AdminChannelList } from "@/components/party/admin-channel-list";
 import { AdminNeeds } from "@/components/party/admin-needs";
+import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -87,9 +88,8 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
   const phones = phonesList.join(", ");
   const contributions = contributionsList.join("\n");
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voisinons.fr";
-  const publicUrl = `${appUrl}/${party.slug}`;
-  const adminUrl = `${appUrl}/${party.slug}/admin?token=${token}`;
+  const publicUrl = `${SITE_URL}/${party.slug}`;
+  const adminUrl = `${SITE_URL}/${party.slug}/admin?token=${token}`;
 
   return (
     <main className="min-h-screen bg-neighbor-cream">

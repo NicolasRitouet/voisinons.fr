@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ContentPageHeader } from "@/components/landing/content-page-header";
 import { Footer } from "@/components/landing/footer";
 import { MairieAstuce } from "@/components/landing/mairie-astuce";
+import { SITE_URL } from "@/lib/site";
 
-const PAGE_URL = "https://voisinons.fr/fete-des-voisins-2026";
+const PAGE_URL = `${SITE_URL}/fete-des-voisins-2026`;
 const TITLE = "Fête des Voisins 2026 : date officielle, origine et comment l'organiser";
 const DESCRIPTION =
   "Fête des Voisins 2026 : vendredi 29 mai. Date officielle, origine, conseils pratiques et outil gratuit pour créer votre affiche en 30 secondes.";
@@ -37,8 +38,8 @@ const eventJsonLd = {
     name: "France",
   },
   image: [
-    "https://voisinons.fr/affiche-officielle-fdv-2026.jpg",
-    "https://voisinons.fr/affiche-fete-des-voisins.png",
+    `${SITE_URL}/affiche-officielle-fdv-2026.jpg`,
+    `${SITE_URL}/affiche-fete-des-voisins.png`,
   ],
   organizer: {
     "@type": "Organization",
@@ -67,7 +68,7 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://voisinons.fr/" },
+    { "@type": "ListItem", position: 1, name: "Accueil", item: `${SITE_URL}/` },
     { "@type": "ListItem", position: 2, name: "Fête des Voisins 2026", item: PAGE_URL },
   ],
 };

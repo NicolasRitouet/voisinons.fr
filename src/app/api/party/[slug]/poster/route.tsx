@@ -8,6 +8,7 @@ import { parties } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PartyPoster } from "@/lib/pdf/party-poster";
 import { resolveAdminToken } from "@/lib/auth/admin-session";
+import { SITE_URL } from "@/lib/site";
 
 export async function GET(
   request: NextRequest,
@@ -37,8 +38,7 @@ export async function GET(
   }
 
   // Generate QR code
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voisinons.fr";
-  const partyUrl = `${appUrl}/${party.slug}`;
+  const partyUrl = `${SITE_URL}/${party.slug}`;
   const qrCodeDataUrl = await QRCode.toDataURL(partyUrl, {
     width: 300,
     margin: 2,
