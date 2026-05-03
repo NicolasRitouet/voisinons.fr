@@ -9,6 +9,16 @@ function getResendClient() {
   return new Resend(apiKey);
 }
 
+// Prevents <a> phishing injection in HTML email bodies.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface PartyCreatedEmailData {
   to: string;
   organizerName: string;
@@ -182,6 +192,96 @@ export async function sendParticipantEditEmail(data: ParticipantEditEmailData) {
   <p style="color: #666; font-size: 14px;">
     À bientôt pour la fête !<br>
     L'équipe Voisinons.fr
+  </p>
+</body>
+</html>
+      `,
+    });
+
+    if (error) {
+      console.error("[Email] Resend API error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: emailData?.id };
+  } catch (err) {
+    console.error("[Email] Failed to send email:", err);
+    return { success: false, error: "Failed to send email" };
+  }
+}
+
+interface OrganizerNewParticipantEmailData {
+  to: string;
+  organizerName: string;
+  partyName: string;
+  partySlug: string;
+  adminToken: string;
+  participantName: string;
+  participantBringing?: string | null;
+  participantGuestCount: number;
+}
+
+export async function sendOrganizerNewParticipantEmail(
+  data: OrganizerNewParticipantEmailData
+) {
+  const resend = getResendClient();
+  if (!resend) {
+    return { success: false, error: "Email service not configured" };
+  }
+
+  // Token in URL so the link works on a device without the httpOnly cookie.
+  const adminUrl = `${SITE_URL}/${data.partySlug}/admin?token=${data.adminToken}`;
+
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL || "Voisinons.fr <noreply@mail.voisinons.fr>";
+
+  const safeOrganizerName = escapeHtml(data.organizerName);
+  const safeParticipantName = escapeHtml(data.participantName);
+  const safePartyName = escapeHtml(data.partyName);
+
+  const guestSuffix =
+    data.participantGuestCount > 1
+      ? ` <span style="color: #666;">(${data.participantGuestCount} personnes)</span>`
+      : "";
+  const bringingLine = data.participantBringing
+    ? `<p style="margin: 0;"><strong>Apporte :</strong> ${escapeHtml(data.participantBringing)}</p>`
+    : `<p style="margin: 0; color: #666;">Le participant n'a pas précisé ce qu'il apporte.</p>`;
+
+  try {
+    const { data: emailData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.to,
+      subject: `Nouveau voisin inscrit à "${data.partyName}"`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="text-align: center; margin-bottom: 30px;">
+    <div style="display: inline-block; background: #E86E3A; color: white; width: 50px; height: 50px; border-radius: 50%; line-height: 50px; font-size: 24px; font-weight: bold;">V</div>
+    <h1 style="color: #3D3D3D; margin: 10px 0 0 0;">voisinons.fr</h1>
+  </div>
+
+  <p>Bonjour ${safeOrganizerName},</p>
+
+  <p>Bonne nouvelle : <strong>${safeParticipantName}</strong>${guestSuffix} vient de s'inscrire à votre fête <strong>"${safePartyName}"</strong>.</p>
+
+  <div style="background: #FFF8F0; border-radius: 10px; padding: 20px; margin: 20px 0;">
+    ${bringingLine}
+  </div>
+
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="${adminUrl}" style="display: inline-block; background: #E86E3A; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold;">Voir tous les participants</a>
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+  <p style="color: #666; font-size: 13px;">
+    Vous recevez cet email parce que vous avez activé les notifications de nouvelle participation.
+    Pour ne plus les recevoir, désactivez l'option depuis <a href="${adminUrl}" style="color: #E86E3A;">la page admin de votre fête</a>.
   </p>
 </body>
 </html>

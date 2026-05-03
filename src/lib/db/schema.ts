@@ -60,6 +60,9 @@ export const parties = pgTable("parties", {
   accessCode: varchar("access_code", { length: 50 }),
   organizerName: varchar("organizer_name", { length: 255 }).notNull(),
   organizerEmail: varchar("organizer_email", { length: 255 }).notNull(),
+  notifyOnNewParticipant: boolean("notify_on_new_participant")
+    .notNull()
+    .default(false),
   adminToken: varchar("admin_token", { length: 64 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

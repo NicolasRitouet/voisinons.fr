@@ -18,6 +18,11 @@ export const placeTypeLabels: Record<(typeof placeTypes)[number], string> = {
   autre: "Autre",
 };
 
+const notifyOnNewParticipantField = z
+  .boolean()
+  .optional()
+  .default(false);
+
 export const createPartySchema = z
   .object({
     name: z
@@ -73,6 +78,7 @@ export const createPartySchema = z
       .min(2, "Le nom doit faire au moins 2 caractères")
       .max(255, "Le nom ne peut pas dépasser 255 caractères"),
     organizerEmail: z.string().email("Email invalide"),
+    notifyOnNewParticipant: notifyOnNewParticipantField,
   })
   .superRefine((data, ctx) => {
     if (data.timeEnd && data.timeEnd !== "") {
@@ -119,6 +125,7 @@ export const updatePartyDetailsSchema = z
       .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis")
       .optional()
       .or(z.literal("")),
+    notifyOnNewParticipant: notifyOnNewParticipantField,
   })
   .superRefine((data, ctx) => {
     if (data.timeEnd && data.timeEnd !== "") {

@@ -159,6 +159,7 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                   defaultCoverImageUrl={party.coverImageUrl}
                   defaultLatitude={defaultLatitude}
                   defaultLongitude={defaultLongitude}
+                  defaultNotifyOnNewParticipant={party.notifyOnNewParticipant}
                 />
               </div>
             </CardContent>

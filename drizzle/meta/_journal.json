@@ -22,6 +22,13 @@
       "when": 1777369332650,
       "tag": "0002_mairies_telephone",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777831303069,
+      "tag": "0003_parties_notify_on_new_participant",
+      "breakpoints": true
     }
   ]
 }

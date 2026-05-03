@@ -5,7 +5,10 @@ import { participants, parties } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { generateToken } from "@/lib/crypto";
-import { sendParticipantEditEmail } from "@/lib/email";
+import {
+  sendParticipantEditEmail,
+  sendOrganizerNewParticipantEmail,
+} from "@/lib/email";
 
 const joinPartySchema = z.object({
   partyId: z.string().uuid(),
@@ -45,14 +48,15 @@ export async function joinParty(data: JoinPartyInput) {
       })
       .returning({ id: participants.id });
 
-    if (validated.data.email) {
-      try {
-        const party = await db.query.parties.findFirst({
-          where: eq(parties.id, validated.data.partyId),
-        });
+    const party = await db.query.parties.findFirst({
+      where: eq(parties.id, validated.data.partyId),
+    });
 
-        if (party) {
-          await sendParticipantEditEmail({
+    if (party) {
+      const sends: Array<Promise<unknown>> = [];
+      if (validated.data.email) {
+        sends.push(
+          sendParticipantEditEmail({
             to: validated.data.email,
             participantName: validated.data.name,
             partyName: party.name,
@@ -60,10 +64,28 @@ export async function joinParty(data: JoinPartyInput) {
             editToken,
             partyDate: party.dateStart,
             partyAddress: party.address,
-          });
+          })
+        );
+      }
+      if (party.notifyOnNewParticipant && party.organizerEmail) {
+        sends.push(
+          sendOrganizerNewParticipantEmail({
+            to: party.organizerEmail,
+            organizerName: party.organizerName,
+            partyName: party.name,
+            partySlug: party.slug,
+            adminToken: party.adminToken,
+            participantName: validated.data.name,
+            participantBringing: validated.data.bringing ?? null,
+            participantGuestCount: validated.data.guestCount,
+          })
+        );
+      }
+      const results = await Promise.allSettled(sends);
+      for (const r of results) {
+        if (r.status === "rejected") {
+          console.error("Failed to send participant/organizer email:", r.reason);
         }
-      } catch (err) {
-        console.error("Failed to send participant email:", err);
       }
     }
 

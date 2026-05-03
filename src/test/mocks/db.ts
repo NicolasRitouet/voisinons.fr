@@ -17,6 +17,7 @@ export const mockParty = {
   accessCode: null,
   organizerName: "Jean Dupont",
   organizerEmail: "jean@example.com",
+  notifyOnNewParticipant: false,
   adminToken: "abc123def456",
   createdAt: new Date(),
   updatedAt: new Date(),

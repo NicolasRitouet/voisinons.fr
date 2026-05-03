@@ -17,6 +17,7 @@ vi.mock("@/lib/db", () => ({
 // Mock the email module
 vi.mock("@/lib/email", () => ({
   sendParticipantEditEmail: vi.fn().mockResolvedValue(undefined),
+  sendOrganizerNewParticipantEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock crypto utility
@@ -25,6 +26,8 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 import { db } from "@/lib/db";
+import { sendOrganizerNewParticipantEmail } from "@/lib/email";
+import { mockParty } from "@/test/mocks/db";
 import {
   joinParty,
   getParticipantById,
@@ -120,6 +123,60 @@ describe("participant actions", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("erreur");
+    });
+
+    it("notifies the organizer when notifyOnNewParticipant is enabled", async () => {
+      const mockInsert = vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: "participant-1" }]),
+        }),
+      });
+      (db.insert as ReturnType<typeof vi.fn>).mockImplementation(mockInsert);
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ...mockParty,
+        notifyOnNewParticipant: true,
+      });
+
+      await joinParty({
+        partyId: mockParty.id,
+        name: "Bob",
+        guestCount: 2,
+        bringing: "Tarte aux pommes",
+      });
+
+      expect(sendOrganizerNewParticipantEmail).toHaveBeenCalledTimes(1);
+      expect(sendOrganizerNewParticipantEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: mockParty.organizerEmail,
+          organizerName: mockParty.organizerName,
+          partyName: mockParty.name,
+          partySlug: mockParty.slug,
+          adminToken: mockParty.adminToken,
+          participantName: "Bob",
+          participantBringing: "Tarte aux pommes",
+          participantGuestCount: 2,
+        })
+      );
+    });
+
+    it("does NOT notify the organizer when notifyOnNewParticipant is disabled", async () => {
+      const mockInsert = vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: "participant-2" }]),
+        }),
+      });
+      (db.insert as ReturnType<typeof vi.fn>).mockImplementation(mockInsert);
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockParty
+      );
+
+      await joinParty({
+        partyId: mockParty.id,
+        name: "Bob",
+        guestCount: 1,
+      });
+
+      expect(sendOrganizerNewParticipantEmail).not.toHaveBeenCalled();
     });
   });
 

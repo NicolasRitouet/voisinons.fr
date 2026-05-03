@@ -252,6 +252,7 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
     latitude,
     longitude,
     coverImageUrl,
+    notifyOnNewParticipant,
   } = validated.data;
 
   // Fetch columns needed for auth validation + the previous cover image
@@ -288,6 +289,7 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
         latitude: latitude?.toString() ?? null,
         longitude: longitude?.toString() ?? null,
         coverImageUrl: coverImageUrl || null,
+        notifyOnNewParticipant,
         updatedAt: new Date(),
       })
       .where(eq(parties.id, partyId));

@@ -72,6 +72,7 @@ export function CreatePartyForm() {
       accessCode: "",
       organizerName: "",
       organizerEmail: "",
+      notifyOnNewParticipant: false,
     },
   });
 
@@ -574,6 +575,32 @@ export function CreatePartyForm() {
                       Nous vous enverrons le lien d&apos;administration de votre fête
                     </FormDescription>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Organizer notification toggle */}
+              <FormField
+                control={form.control}
+                name="notifyOnNewParticipant"
+                render={({ field }) => (
+                  <FormItem className="mt-4 flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <FormLabel className="text-base">
+                        Me notifier des nouvelles inscriptions
+                      </FormLabel>
+                      <FormDescription>
+                        Recevez un email à chaque fois qu&apos;un voisin
+                        s&apos;inscrit. Désactivable à tout moment depuis la
+                        page d&apos;administration.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

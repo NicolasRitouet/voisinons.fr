@@ -8,6 +8,7 @@ import { fr } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { DateTimePicker, TimePicker } from "@/components/ui/datetime-picker";
 import {
   Form,
@@ -36,6 +37,7 @@ interface AdminEditPartyFormProps {
   defaultCoverImageUrl?: string | null;
   defaultLatitude?: number | null;
   defaultLongitude?: number | null;
+  defaultNotifyOnNewParticipant: boolean;
 }
 
 export function AdminEditPartyForm({
@@ -48,6 +50,7 @@ export function AdminEditPartyForm({
   defaultCoverImageUrl,
   defaultLatitude,
   defaultLongitude,
+  defaultNotifyOnNewParticipant,
 }: AdminEditPartyFormProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -66,6 +69,7 @@ export function AdminEditPartyForm({
     timeEnd: defaultTimeEnd ?? "",
     latitude: defaultLatitude ?? undefined,
     longitude: defaultLongitude ?? undefined,
+    notifyOnNewParticipant: defaultNotifyOnNewParticipant,
   };
 
   const form = useForm<UpdatePartyDetailsInput>({
@@ -305,6 +309,30 @@ export function AdminEditPartyForm({
                     <p className="text-sm text-red-600">{uploadError}</p>
                   )}
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notifyOnNewParticipant"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5 pr-4">
+                    <FormLabel className="text-base">
+                      Me notifier des nouvelles inscriptions
+                    </FormLabel>
+                    <FormDescription>
+                      Recevez un email à chaque fois qu&apos;un voisin
+                      s&apos;inscrit à votre fête.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value ?? false}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

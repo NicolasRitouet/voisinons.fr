@@ -1,0 +1,1 @@
+ALTER TABLE "parties" ADD COLUMN "notify_on_new_participant" boolean DEFAULT false NOT NULL;
