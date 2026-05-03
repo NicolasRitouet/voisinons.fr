@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { fr } from "date-fns/locale";
-import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,18 +41,7 @@ import {
 import { createParty, checkSlugAvailability } from "@/lib/actions/party";
 import { saveAdminParty } from "@/lib/storage/admin-parties";
 
-// Lazy load UploadButton - only loaded when user needs to upload
-const UploadButton = dynamic(
-  () => import("@/lib/uploadthing").then((m) => m.UploadButton),
-  {
-    ssr: false,
-    loading: () => (
-      <span className="bg-gray-200 text-gray-400 px-4 py-2 rounded-md text-sm">
-        Chargement...
-      </span>
-    ),
-  }
-);
+import { CoverImageUpload } from "@/components/cover-image-upload";
 
 export function CreatePartyForm() {
   const router = useRouter();
@@ -472,23 +460,12 @@ export function CreatePartyForm() {
                       )}
 
                       <div className="flex flex-wrap items-center gap-3">
-                        <UploadButton
-                          endpoint="partyCoverImage"
-                          onClientUploadComplete={(res) => {
-                            const url =
-                              res?.[0]?.url || (res?.[0] as { ufsUrl?: string })?.ufsUrl;
-                            if (url) {
-                              field.onChange(url);
-                              setUploadError(null);
-                            }
+                        <CoverImageUpload
+                          onUploaded={(url) => {
+                            field.onChange(url);
+                            setUploadError(null);
                           }}
-                          onUploadError={(error) => {
-                            setUploadError(error.message);
-                          }}
-                          appearance={{
-                            button:
-                              "bg-neighbor-stone text-white hover:bg-neighbor-orange px-4 py-2 rounded-md",
-                          }}
+                          onError={(message) => setUploadError(message)}
                         />
                         {watchCoverImage && (
                           <Button

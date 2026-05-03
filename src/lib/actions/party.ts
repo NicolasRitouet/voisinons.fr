@@ -19,9 +19,12 @@ import {
   type DeleteChannelInput,
 } from "@/lib/validations/channel";
 import { eq } from "drizzle-orm";
+import { del } from "@vercel/blob";
 import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
 import { setAdminSessionCookie } from "@/lib/auth/admin-session";
+
+const VERCEL_BLOB_HOST = ".public.blob.vercel-storage.com";
 
 export async function createParty(data: CreatePartyInput) {
   const validated = createPartySchema.safeParse(data);
@@ -251,10 +254,11 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
     coverImageUrl,
   } = validated.data;
 
-  // Only fetch columns needed for auth validation
+  // Fetch columns needed for auth validation + the previous cover image
+  // so we can clean up the old blob if it gets replaced.
   const party = await db.query.parties.findFirst({
     where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true },
+    columns: { id: true, adminToken: true, coverImageUrl: true },
   });
 
   if (!party || party.adminToken !== token) {
@@ -287,6 +291,17 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
         updatedAt: new Date(),
       })
       .where(eq(parties.id, partyId));
+
+    const previousCover = party.coverImageUrl;
+    if (
+      previousCover &&
+      previousCover !== coverImageUrl &&
+      previousCover.includes(VERCEL_BLOB_HOST)
+    ) {
+      await del(previousCover).catch((err) => {
+        console.warn("Failed to delete previous cover blob:", err);
+      });
+    }
 
     return { success: true as const };
   } catch (error) {

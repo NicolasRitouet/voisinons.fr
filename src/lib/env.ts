@@ -11,8 +11,13 @@ const envSchema = z.object({
   // Optional - app URL (has default)
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
 
-  // UploadThing
+  // UploadThing (deprecated, kept during migration to Vercel Blob)
   UPLOADTHING_TOKEN: z.string().min(1, "UPLOADTHING_TOKEN is required"),
+
+  // Vercel Blob
+  BLOB_READ_WRITE_TOKEN: z
+    .string()
+    .min(1, "BLOB_READ_WRITE_TOKEN is required"),
 
   // System
   NODE_ENV: z

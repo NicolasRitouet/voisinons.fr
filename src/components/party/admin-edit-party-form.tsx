@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { AddressAutocomplete, type AddressSuggestion } from "@/components/ui/address-autocomplete";
-import { UploadButton } from "@/lib/uploadthing";
+import { CoverImageUpload } from "@/components/cover-image-upload";
 import {
   updatePartyDetailsSchema,
   type UpdatePartyDetailsInput,
@@ -276,23 +276,12 @@ export function AdminEditPartyForm({
                       )}
 
                       <div className="flex flex-wrap items-center gap-3">
-                        <UploadButton
-                          endpoint="partyCoverImage"
-                          onClientUploadComplete={(res) => {
-                            const url =
-                              res?.[0]?.url || (res?.[0] as { ufsUrl?: string })?.ufsUrl;
-                            if (url) {
-                              field.onChange(url);
-                              setUploadError(null);
-                            }
+                        <CoverImageUpload
+                          onUploaded={(url) => {
+                            field.onChange(url);
+                            setUploadError(null);
                           }}
-                          onUploadError={(error) => {
-                            setUploadError(error.message);
-                          }}
-                          appearance={{
-                            button:
-                              "bg-neighbor-stone text-white hover:bg-neighbor-orange px-4 py-2 rounded-md",
-                          }}
+                          onError={(message) => setUploadError(message)}
                         />
                         {field.value && (
                           <Button
