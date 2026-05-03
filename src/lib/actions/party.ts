@@ -18,7 +18,7 @@ import {
   type UpdateChannelInput,
   type DeleteChannelInput,
 } from "@/lib/validations/channel";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { del } from "@vercel/blob";
 import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
@@ -298,9 +298,23 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
       previousCover !== coverImageUrl &&
       previousCover.includes(VERCEL_BLOB_HOST)
     ) {
-      await del(previousCover).catch((err) => {
-        console.warn("Failed to delete previous cover blob:", err);
+      // Guard against arbitrary blob deletion: an attacker holding any
+      // valid admin token can submit another party's coverImageUrl, then
+      // overwrite it on a second call so previousCover points at the
+      // victim's blob. Only delete the blob when no other row references
+      // it.
+      const stillReferenced = await db.query.parties.findFirst({
+        where: and(
+          eq(parties.coverImageUrl, previousCover),
+          ne(parties.id, partyId),
+        ),
+        columns: { id: true },
       });
+      if (!stillReferenced) {
+        await del(previousCover).catch((err) => {
+          console.warn("Failed to delete previous cover blob:", err);
+        });
+      }
     }
 
     return { success: true as const };

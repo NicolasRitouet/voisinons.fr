@@ -27,12 +27,20 @@ vi.mock("@/lib/crypto", () => ({
   generateToken: vi.fn(() => "mock-admin-token-1234567890abcdef"),
 }));
 
+// Mock Vercel Blob so we can assert whether del() is invoked
+vi.mock("@vercel/blob", () => ({
+  put: vi.fn(),
+  del: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { db } from "@/lib/db";
+import { del } from "@vercel/blob";
 import {
   createParty,
   checkSlugAvailability,
   createPartyUpdate,
   createDiscussionChannel,
+  updatePartyDetails,
 } from "./party";
 
 describe("party actions", () => {
@@ -247,6 +255,131 @@ describe("party actions", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Erreur");
+    });
+  });
+
+  describe("updatePartyDetails", () => {
+    const VALID_PARTY_ID = "550e8400-e29b-41d4-a716-446655440000";
+    const ATTACKER_ID = "550e8400-e29b-41d4-a716-446655440001";
+    const VICTIM_ID = "550e8400-e29b-41d4-a716-446655440002";
+    const TOKEN = "valid-admin-token";
+    const BLOB_HOST = "https://store.public.blob.vercel-storage.com";
+
+    function blobUrl(name: string) {
+      return `${BLOB_HOST}/party-cover/${name}.jpg`;
+    }
+
+    function buildPayload(overrides: Partial<Parameters<typeof updatePartyDetails>[0]> = {}) {
+      return {
+        partyId: VALID_PARTY_ID,
+        token: TOKEN,
+        address: "12 rue de la Paix, Paris",
+        date: new Date(2026, 4, 29).toISOString(),
+        timeStart: "18:00",
+        timeEnd: "23:00",
+        ...overrides,
+      };
+    }
+
+    function mockUpdateNoop() {
+      (db.update as ReturnType<typeof vi.fn>).mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
+        }),
+      });
+    }
+
+    it("calls del() on the previous Blob when replacing a cover the admin owns", async () => {
+      const previous = blobUrl("owned");
+      const next = blobUrl("new");
+
+      // 1st findFirst: auth + previousCover. 2nd findFirst: stillReferenced check.
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ id: VALID_PARTY_ID, adminToken: TOKEN, coverImageUrl: previous })
+        .mockResolvedValueOnce(null);
+      mockUpdateNoop();
+
+      const result = await updatePartyDetails(buildPayload({ coverImageUrl: next }));
+
+      expect(result.success).toBe(true);
+      expect(del).toHaveBeenCalledTimes(1);
+      expect(del).toHaveBeenCalledWith(previous);
+    });
+
+    it("does NOT call del() when previousCover is still referenced by another party (anti arbitrary blob deletion)", async () => {
+      // Attack scenario: attacker poisoned their own row with the victim's
+      // Blob URL on a previous call. They now overwrite it; previousCover
+      // is the victim's URL. The guard must recognize the URL is still
+      // referenced and skip del().
+      const stolen = blobUrl("victim");
+
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ id: ATTACKER_ID, adminToken: TOKEN, coverImageUrl: stolen })
+        .mockResolvedValueOnce({ id: VICTIM_ID });
+      mockUpdateNoop();
+
+      const result = await updatePartyDetails(
+        buildPayload({ partyId: ATTACKER_ID, coverImageUrl: "" })
+      );
+
+      expect(result.success).toBe(true);
+      expect(del).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call del() when previousCover is null", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        id: VALID_PARTY_ID,
+        adminToken: TOKEN,
+        coverImageUrl: null,
+      });
+      mockUpdateNoop();
+
+      const result = await updatePartyDetails(buildPayload({ coverImageUrl: blobUrl("first") }));
+
+      expect(result.success).toBe(true);
+      expect(del).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call del() for non-Vercel-Blob URLs (legacy UploadThing leftovers)", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        id: VALID_PARTY_ID,
+        adminToken: TOKEN,
+        coverImageUrl: "https://utfs.io/f/legacy-key",
+      });
+      mockUpdateNoop();
+
+      const result = await updatePartyDetails(buildPayload({ coverImageUrl: blobUrl("new") }));
+
+      expect(result.success).toBe(true);
+      expect(del).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call del() when the URL is unchanged", async () => {
+      const same = blobUrl("same");
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        id: VALID_PARTY_ID,
+        adminToken: TOKEN,
+        coverImageUrl: same,
+      });
+      mockUpdateNoop();
+
+      const result = await updatePartyDetails(buildPayload({ coverImageUrl: same }));
+
+      expect(result.success).toBe(true);
+      expect(del).not.toHaveBeenCalled();
+    });
+
+    it("rejects an invalid admin token without touching del()", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        id: VALID_PARTY_ID,
+        adminToken: "different-token",
+        coverImageUrl: blobUrl("anything"),
+      });
+
+      const result = await updatePartyDetails(buildPayload({ coverImageUrl: "" }));
+
+      expect(result.success).toBe(false);
+      expect(del).not.toHaveBeenCalled();
     });
   });
 
