@@ -14,7 +14,7 @@ env:
   # Dummy values so env validation passes during build/test.
   # Real secrets are injected via Vercel at deploy time.
   DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
-  UPLOADTHING_TOKEN: ci-dummy-token
+  BLOB_READ_WRITE_TOKEN: vercel_blob_rw_ci-dummy-token
   NEXT_PUBLIC_APP_URL: http://localhost:3000
 
 jobs:
