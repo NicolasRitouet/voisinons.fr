@@ -2,8 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 
 export function Footer() {
-  const currentYear = new Date().getFullYear();
-
   return (
     <footer className="bg-neighbor-dark text-white py-12 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
@@ -21,8 +19,8 @@ export function Footer() {
             </span>
           </Link>
           <p className="text-gray-400 text-sm font-[family-name:var(--font-outfit)] max-w-sm">
-            Fait avec &#10084; pour des quartiers plus vivants. Un outil gratuit
-            pour reconnecter les voisins entre eux.
+            Un outil gratuit pour reconnecter les voisins et faire vivre les
+            quartiers.
           </p>
         </div>
 
@@ -126,9 +124,8 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 mt-8 pt-8 border-t border-white/10 text-center md:text-left text-xs text-gray-500 font-[family-name:var(--font-outfit)] flex flex-col md:flex-row justify-between items-center">
-        <p>&copy; {currentYear} Voisinons.fr. Tous droits réservés.</p>
-        <p className="mt-2 md:mt-0">Fait avec &#10084; pour les voisins</p>
+      <div className="max-w-7xl mx-auto px-4 mt-8 pt-8 border-t border-white/10 text-center text-xs text-gray-500 font-[family-name:var(--font-outfit)]">
+        <p>Fait avec &#10084; pour les voisins</p>
       </div>
     </footer>
   );
