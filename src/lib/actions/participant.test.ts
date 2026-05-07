@@ -25,11 +25,11 @@ vi.mock("@/lib/crypto", () => ({
   generateToken: vi.fn(() => "mock-token-1234567890abcdef"),
 }));
 
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { participants } from "@/lib/db/schema";
 import { sendOrganizerNewParticipantEmail } from "@/lib/email";
 import { mockParty } from "@/test/mocks/db";
-import { eq } from "drizzle-orm";
-import { participants } from "@/lib/db/schema";
 import {
   joinParty,
   getParticipantByToken,
@@ -259,10 +259,8 @@ describe("participant actions", () => {
     });
 
     it("should update participant by token and scope the WHERE to editToken", async () => {
-      // The credential check lives entirely in the WHERE clause: a typo such
-      // as `eq(participants.id, validated.data.editToken)` would silently turn
-      // this into an UUID-keyed lookup. Capture the argument and assert that
-      // it filters on `participants.editToken`.
+      // The entire credential check is the WHERE clause; assert the column,
+      // otherwise a typo could silently lookup by id instead of editToken.
       const mockWhere = vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue([{ id: "participant-123" }]),
       });

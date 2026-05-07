@@ -487,19 +487,21 @@ describe("public read-model column allowlists", () => {
 });
 
 describe("getPartyBySlug query shape", () => {
-  // Without these assertions a refactor that reverts to `with: { participants:
-  // true }` or drops the `columns:` option would silently re-introduce the
-  // adminToken / editToken / PII leak. The constants alone do not protect us;
-  // the call site must use them.
+  // The column allowlists alone do not protect anything; the call site must
+  // pass them. These tests assert the call shape rather than the resolved
+  // value, so they mock findFirst with null and never read its return.
+  let findFirstMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
+    // This describe is a sibling of the top-level one, not nested, so its
+    // beforeEach is independent — call clearAllMocks here too.
     vi.clearAllMocks();
+    findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
+    findFirstMock.mockResolvedValue(null);
   });
 
+  // Each test uses a distinct slug to bypass React.cache() memoization.
   it("restricts the parties query to publicPartyColumns", async () => {
-    const findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
-    findFirstMock.mockResolvedValue(null);
-
-    // Use a unique slug per test to defeat React.cache() memoization across runs.
     await getPartyBySlug("query-shape-test-slug-party");
 
     expect(findFirstMock).toHaveBeenCalledTimes(1);
@@ -508,9 +510,6 @@ describe("getPartyBySlug query shape", () => {
   });
 
   it("restricts each participant relation to publicParticipantColumns", async () => {
-    const findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
-    findFirstMock.mockResolvedValue(null);
-
     await getPartyBySlug("query-shape-test-slug-participants");
 
     const callArg = findFirstMock.mock.calls[0][0];
@@ -520,12 +519,7 @@ describe("getPartyBySlug query shape", () => {
     );
   });
 
-  it("never selects participants without a column allowlist", async () => {
-    // Catches `with: { participants: true }` regressions: a boolean true here
-    // tells Drizzle to fetch every column, including editToken/email/phone.
-    const findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
-    findFirstMock.mockResolvedValue(null);
-
+  it("never resolves a participant relation as `true` (which would fetch every column)", async () => {
     await getPartyBySlug("query-shape-test-slug-no-true");
 
     const callArg = findFirstMock.mock.calls[0][0];
