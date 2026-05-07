@@ -28,6 +28,7 @@ import {
   updateParticipant,
 } from "@/lib/actions/participant";
 import {
+  getParticipantId,
   getParticipantToken,
   setParticipantToken,
   removeParticipantToken,
@@ -96,9 +97,9 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
 
   useEffect(() => {
     async function checkExistingRegistration() {
-      // Drop any legacy id-only entry — id alone is no longer accepted as proof
-      // of ownership; only an editToken counts.
-      removeParticipantId(partySlug);
+      if (getParticipantId(partySlug)) {
+        removeParticipantId(partySlug);
+      }
 
       const tokenFromUrl = searchParams.get("participantToken");
       if (tokenFromUrl) {

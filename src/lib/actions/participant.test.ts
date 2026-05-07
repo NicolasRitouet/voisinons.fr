@@ -242,6 +242,7 @@ describe("participant actions", () => {
       } as unknown as AnyUpdateInput);
 
       expect(result.success).toBe(false);
+      expect(result).toHaveProperty("error");
     });
 
     it("should reject invalid name", async () => {

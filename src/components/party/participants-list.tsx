@@ -1,11 +1,6 @@
 import { useMemo } from "react";
-import type { Participant } from "@/lib/db/schema";
+import type { PublicParticipant } from "@/lib/actions/party";
 import { Badge } from "@/components/ui/badge";
-
-type PublicParticipant = Pick<
-  Participant,
-  "id" | "name" | "guestCount" | "bringing" | "isOrganizer"
->;
 
 interface ParticipantsListProps {
   participants: PublicParticipant[];
