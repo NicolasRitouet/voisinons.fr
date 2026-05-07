@@ -6,6 +6,8 @@
 // editToken/email/phone here. Sensitive admin reads must go through
 // getPartyForAdmin instead.
 
+import type { Participant } from "@/lib/db/schema";
+
 export const publicPartyColumns = {
   id: true,
   slug: true,
@@ -33,3 +35,8 @@ export const publicParticipantColumns = {
   isOrganizer: true,
   createdAt: true,
 } as const;
+
+export type PublicParticipant = Pick<
+  Participant,
+  keyof typeof publicParticipantColumns
+>;

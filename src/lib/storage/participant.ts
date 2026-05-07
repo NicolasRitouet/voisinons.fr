@@ -40,17 +40,6 @@ export function getParticipantId(partySlug: string): string | null {
   }
 }
 
-export function setParticipantId(partySlug: string, id: string): void {
-  if (typeof window === "undefined") return;
-  const key = getParticipantIdKey(partySlug);
-  try {
-    localStorage.setItem(key, id);
-    participantCache.set(key, id);
-  } catch {
-    // localStorage might be full or disabled
-  }
-}
-
 export function getParticipantToken(partySlug: string): string | null {
   const key = getParticipantTokenKey(partySlug);
   if (participantCache.has(key)) {

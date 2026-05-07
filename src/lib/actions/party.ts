@@ -184,9 +184,6 @@ export const getPartyBySlug = cache(async (slug: string) => {
   });
 });
 
-export type PublicParty = NonNullable<Awaited<ReturnType<typeof getPartyBySlug>>>;
-export type PublicParticipant = PublicParty["participants"][number];
-
 export async function getPartyForAdmin(slug: string, token: string) {
   const party = await db.query.parties.findFirst({
     where: eq(parties.slug, slug),

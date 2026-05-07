@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { PublicParticipant } from "@/lib/actions/party";
+import type { PublicParticipant } from "@/lib/actions/party-public-columns";
 import { Badge } from "@/components/ui/badge";
 
 interface ParticipantsListProps {
