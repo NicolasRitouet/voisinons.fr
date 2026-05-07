@@ -41,6 +41,7 @@ import {
   createPartyUpdate,
   createDiscussionChannel,
   updatePartyDetails,
+  getPartyBySlug,
 } from "./party";
 import {
   publicPartyColumns,
@@ -482,5 +483,55 @@ describe("public read-model column allowlists", () => {
     for (const col of Object.keys(publicParticipantColumns)) {
       expect(realColumns).toContain(col);
     }
+  });
+});
+
+describe("getPartyBySlug query shape", () => {
+  // Without these assertions a refactor that reverts to `with: { participants:
+  // true }` or drops the `columns:` option would silently re-introduce the
+  // adminToken / editToken / PII leak. The constants alone do not protect us;
+  // the call site must use them.
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("restricts the parties query to publicPartyColumns", async () => {
+    const findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
+    findFirstMock.mockResolvedValue(null);
+
+    // Use a unique slug per test to defeat React.cache() memoization across runs.
+    await getPartyBySlug("query-shape-test-slug-party");
+
+    expect(findFirstMock).toHaveBeenCalledTimes(1);
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.columns).toBe(publicPartyColumns);
+  });
+
+  it("restricts each participant relation to publicParticipantColumns", async () => {
+    const findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
+    findFirstMock.mockResolvedValue(null);
+
+    await getPartyBySlug("query-shape-test-slug-participants");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.participants.columns).toBe(publicParticipantColumns);
+    expect(callArg.with.needs.with.contributions.with.participant.columns).toBe(
+      publicParticipantColumns
+    );
+  });
+
+  it("never selects participants without a column allowlist", async () => {
+    // Catches `with: { participants: true }` regressions: a boolean true here
+    // tells Drizzle to fetch every column, including editToken/email/phone.
+    const findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
+    findFirstMock.mockResolvedValue(null);
+
+    await getPartyBySlug("query-shape-test-slug-no-true");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.participants).not.toBe(true);
+    expect(callArg.with.needs.with.contributions.with.participant).not.toBe(
+      true
+    );
   });
 });

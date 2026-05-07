@@ -28,6 +28,8 @@ vi.mock("@/lib/crypto", () => ({
 import { db } from "@/lib/db";
 import { sendOrganizerNewParticipantEmail } from "@/lib/email";
 import { mockParty } from "@/test/mocks/db";
+import { eq } from "drizzle-orm";
+import { participants } from "@/lib/db/schema";
 import {
   joinParty,
   getParticipantByToken,
@@ -256,23 +258,33 @@ describe("participant actions", () => {
       expect(result.error).toContain("2 caractères");
     });
 
-    it("should update participant by token", async () => {
+    it("should update participant by token and scope the WHERE to editToken", async () => {
+      // The credential check lives entirely in the WHERE clause: a typo such
+      // as `eq(participants.id, validated.data.editToken)` would silently turn
+      // this into an UUID-keyed lookup. Capture the argument and assert that
+      // it filters on `participants.editToken`.
+      const mockWhere = vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "participant-123" }]),
+      });
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ id: "participant-123" }]),
-          }),
+          where: mockWhere,
         }),
       });
       (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
 
+      const editToken = "valid-token-1234567890";
       const result = await updateParticipant({
-        editToken: "valid-token-1234567890",
+        editToken,
         name: "Jean Dupont Modifié",
         guestCount: 3,
       });
 
       expect(result.success).toBe(true);
+      expect(mockWhere).toHaveBeenCalledTimes(1);
+      expect(mockWhere).toHaveBeenCalledWith(
+        eq(participants.editToken, editToken)
+      );
     });
 
     it("should return error when participant not found", async () => {
