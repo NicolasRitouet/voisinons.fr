@@ -3,23 +3,17 @@
 import { db } from "@/lib/db";
 import { participants, parties } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import { generateToken } from "@/lib/crypto";
 import {
   sendParticipantEditEmail,
   sendOrganizerNewParticipantEmail,
 } from "@/lib/email";
-
-const joinPartySchema = z.object({
-  partyId: z.string().uuid(),
-  name: z.string().min(2, "Le nom doit faire au moins 2 caractères"),
-  email: z.string().email("Email invalide").optional(),
-  phone: z.string().optional(),
-  guestCount: z.number().min(1).max(20).default(1),
-  bringing: z.string().optional(),
-});
-
-type JoinPartyInput = z.infer<typeof joinPartySchema>;
+import {
+  joinPartySchema,
+  updateParticipantSchema,
+  type JoinPartyInput,
+  type UpdateParticipantInput,
+} from "@/lib/validations/participant";
 
 export async function joinParty(data: JoinPartyInput) {
   const validated = joinPartySchema.safeParse(data);
@@ -99,23 +93,9 @@ export async function joinParty(data: JoinPartyInput) {
   }
 }
 
-// Get participant by ID
-export async function getParticipantById(participantId: string) {
-  try {
-    const [participant] = await db
-      .select()
-      .from(participants)
-      .where(eq(participants.id, participantId))
-      .limit(1);
-
-    return participant || null;
-  } catch (error) {
-    console.error("Failed to get participant:", error);
-    return null;
-  }
-}
-
-// Get participant by edit token
+// Get participant by edit token. Only the editToken proves ownership of an
+// RSVP; lookup by participant UUID alone is intentionally unsupported because
+// Server Actions are publicly callable and a UUID is not a credential.
 export async function getParticipantByToken(editToken: string) {
   try {
     const [participant] = await db
@@ -131,24 +111,6 @@ export async function getParticipantByToken(editToken: string) {
   }
 }
 
-// Update participant
-const updateParticipantSchema = z
-  .object({
-    participantId: z.string().uuid().optional(),
-    editToken: z.string().min(10).optional(),
-  name: z.string().min(2, "Le nom doit faire au moins 2 caractères"),
-  email: z.string().email("Email invalide").optional(),
-  phone: z.string().optional(),
-  guestCount: z.number().min(1).max(20).default(1),
-  bringing: z.string().optional(),
-  })
-  .refine((data) => data.participantId || data.editToken, {
-    message: "Identifiant requis",
-    path: ["participantId"],
-  });
-
-type UpdateParticipantInput = z.infer<typeof updateParticipantSchema>;
-
 export async function updateParticipant(data: UpdateParticipantInput) {
   const validated = updateParticipantSchema.safeParse(data);
 
@@ -158,10 +120,6 @@ export async function updateParticipant(data: UpdateParticipantInput) {
       error: validated.error.issues[0]?.message || "Données invalides",
     };
   }
-
-  const whereClause = validated.data.editToken
-    ? eq(participants.editToken, validated.data.editToken)
-    : eq(participants.id, validated.data.participantId as string);
 
   try {
     const [updated] = await db
@@ -173,7 +131,7 @@ export async function updateParticipant(data: UpdateParticipantInput) {
         guestCount: validated.data.guestCount,
         bringing: validated.data.bringing,
       })
-      .where(whereClause)
+      .where(eq(participants.editToken, validated.data.editToken))
       .returning({ id: participants.id });
 
     if (!updated) {

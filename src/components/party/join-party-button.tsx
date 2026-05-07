@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  getParticipantId,
   getParticipantToken,
   setParticipantToken,
 } from "@/lib/storage/participant";
@@ -29,11 +28,10 @@ export function JoinPartyButton({ partySlug }: JoinPartyButtonProps) {
     }
 
     const storedToken = getParticipantToken(partySlug);
-    const storedId = getParticipantId(partySlug);
     // Synchronizing from localStorage (external store) — the linter's general
     // warning against setState-in-effect doesn't apply to this pattern.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasRegistration(Boolean(storedToken || storedId));
+    setHasRegistration(Boolean(storedToken));
   }, [partySlug, searchParams, router]);
 
   const primaryLabel = hasRegistration

@@ -23,6 +23,10 @@ import { del } from "@vercel/blob";
 import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
 import { setAdminSessionCookie } from "@/lib/auth/admin-session";
+import {
+  publicPartyColumns,
+  publicParticipantColumns,
+} from "./party-public-columns";
 
 const VERCEL_BLOB_HOST = ".public.blob.vercel-storage.com";
 
@@ -159,14 +163,15 @@ export async function checkSlugAvailability(slug: string): Promise<boolean> {
 export const getPartyBySlug = cache(async (slug: string) => {
   return db.query.parties.findFirst({
     where: eq(parties.slug, slug),
+    columns: publicPartyColumns,
     with: {
-      participants: true,
+      participants: { columns: publicParticipantColumns },
       needs: {
         orderBy: (needs, { asc }) => [asc(needs.createdAt)],
         with: {
           contributions: {
             with: {
-              participant: true,
+              participant: { columns: publicParticipantColumns },
             },
           },
         },

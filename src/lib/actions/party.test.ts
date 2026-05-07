@@ -41,7 +41,13 @@ import {
   createPartyUpdate,
   createDiscussionChannel,
   updatePartyDetails,
+  getPartyBySlug,
 } from "./party";
+import {
+  publicPartyColumns,
+  publicParticipantColumns,
+} from "./party-public-columns";
+import { parties, participants } from "@/lib/db/schema";
 
 describe("party actions", () => {
   beforeEach(() => {
@@ -435,5 +441,91 @@ describe("party actions", () => {
 
       expect(result.success).toBe(true);
     });
+  });
+});
+
+describe("public read-model column allowlists", () => {
+  // These constants drive what getPartyBySlug returns to unauthenticated
+  // visitors via Server Components. A regression here re-introduces the
+  // adminToken / editToken / PII leak that motivated the security fix.
+  const FORBIDDEN_PARTY_COLUMNS = [
+    "adminToken",
+    "accessCode",
+    "organizerEmail",
+  ] as const;
+  const FORBIDDEN_PARTICIPANT_COLUMNS = [
+    "editToken",
+    "email",
+    "phone",
+  ] as const;
+
+  it("publicPartyColumns excludes secret and PII columns", () => {
+    for (const col of FORBIDDEN_PARTY_COLUMNS) {
+      expect(publicPartyColumns).not.toHaveProperty(col);
+    }
+  });
+
+  it("publicParticipantColumns excludes the editToken credential and PII", () => {
+    for (const col of FORBIDDEN_PARTICIPANT_COLUMNS) {
+      expect(publicParticipantColumns).not.toHaveProperty(col);
+    }
+  });
+
+  it("publicPartyColumns references only real columns on the parties table", () => {
+    const realColumns = Object.keys(parties);
+    for (const col of Object.keys(publicPartyColumns)) {
+      expect(realColumns).toContain(col);
+    }
+  });
+
+  it("publicParticipantColumns references only real columns on the participants table", () => {
+    const realColumns = Object.keys(participants);
+    for (const col of Object.keys(publicParticipantColumns)) {
+      expect(realColumns).toContain(col);
+    }
+  });
+});
+
+describe("getPartyBySlug query shape", () => {
+  // The column allowlists alone do not protect anything; the call site must
+  // pass them. These tests assert the call shape rather than the resolved
+  // value, so they mock findFirst with null and never read its return.
+  let findFirstMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    // This describe is a sibling of the top-level one, not nested, so its
+    // beforeEach is independent — call clearAllMocks here too.
+    vi.clearAllMocks();
+    findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
+    findFirstMock.mockResolvedValue(null);
+  });
+
+  // Each test uses a distinct slug to bypass React.cache() memoization.
+  it("restricts the parties query to publicPartyColumns", async () => {
+    await getPartyBySlug("query-shape-test-slug-party");
+
+    expect(findFirstMock).toHaveBeenCalledTimes(1);
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.columns).toBe(publicPartyColumns);
+  });
+
+  it("restricts each participant relation to publicParticipantColumns", async () => {
+    await getPartyBySlug("query-shape-test-slug-participants");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.participants.columns).toBe(publicParticipantColumns);
+    expect(callArg.with.needs.with.contributions.with.participant.columns).toBe(
+      publicParticipantColumns
+    );
+  });
+
+  it("never resolves a participant relation as `true` (which would fetch every column)", async () => {
+    await getPartyBySlug("query-shape-test-slug-no-true");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.participants).not.toBe(true);
+    expect(callArg.with.needs.with.contributions.with.participant).not.toBe(
+      true
+    );
   });
 });

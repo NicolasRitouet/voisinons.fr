@@ -1,16 +1,16 @@
 import { useMemo } from "react";
-import type { Participant } from "@/lib/db/schema";
+import type { PublicParticipant } from "@/lib/actions/party-public-columns";
 import { Badge } from "@/components/ui/badge";
 
 interface ParticipantsListProps {
-  participants: Participant[];
+  participants: PublicParticipant[];
 }
 
 export function ParticipantsList({ participants }: ParticipantsListProps) {
   // Combine iterations: compute totalGuests and filter contributions in single pass
   const { totalGuests, participantsWithContributions } = useMemo(() => {
     let guests = 0;
-    const withContributions: Participant[] = [];
+    const withContributions: PublicParticipant[] = [];
 
     for (const p of participants) {
       guests += p.guestCount || 1;

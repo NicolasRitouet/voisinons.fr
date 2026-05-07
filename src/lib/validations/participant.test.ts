@@ -1,28 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { z } from "zod";
-
-// Re-create the schemas here for testing (since they're in server actions)
-const joinPartySchema = z.object({
-  partyId: z.string().uuid(),
-  name: z.string().min(2, "Le nom doit faire au moins 2 caractères"),
-  email: z.string().email("Email invalide").optional(),
-  phone: z.string().optional(),
-  guestCount: z.number().min(1).max(20).default(1),
-  bringing: z.string().optional(),
-});
-
-const updateParticipantSchema = z.object({
-  participantId: z.string().uuid().optional(),
-  editToken: z.string().min(10).optional(),
-  name: z.string().min(2, "Le nom doit faire au moins 2 caractères"),
-  email: z.string().email("Email invalide").optional(),
-  phone: z.string().optional(),
-  guestCount: z.number().min(1).max(20).default(1),
-  bringing: z.string().optional(),
-}).refine((data) => data.participantId || data.editToken, {
-  message: "Identifiant requis",
-  path: ["participantId"],
-});
+import { joinPartySchema, updateParticipantSchema } from "./participant";
 
 describe("joinPartySchema", () => {
   const validData = {
@@ -146,22 +123,16 @@ describe("joinPartySchema", () => {
 
 describe("updateParticipantSchema", () => {
   const validData = {
-    participantId: "550e8400-e29b-41d4-a716-446655440000",
+    editToken: "a".repeat(32),
     name: "Marie Martin",
     email: "marie@example.com",
     guestCount: 3,
     bringing: "Un gâteau",
   };
 
-  it("should accept valid update data", () => {
+  it("should accept valid update data with editToken", () => {
     const result = updateParticipantSchema.safeParse(validData);
     expect(result.success).toBe(true);
-  });
-
-  it("should reject invalid participantId", () => {
-    const data = { ...validData, participantId: "invalid" };
-    const result = updateParticipantSchema.safeParse(data);
-    expect(result.success).toBe(false);
   });
 
   it("should reject name too short", () => {
@@ -170,21 +141,25 @@ describe("updateParticipantSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("should accept edit token instead of participantId", () => {
-    const data = {
-      ...validData,
-      participantId: undefined,
-      editToken: "a".repeat(32),
-    };
+  it("should reject when editToken is missing", () => {
+    const data = { ...validData, editToken: undefined };
     const result = updateParticipantSchema.safeParse(data);
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 
-  it("should reject when both participantId and editToken are missing", () => {
+  it("should reject when editToken is too short", () => {
+    const data = { ...validData, editToken: "short" };
+    const result = updateParticipantSchema.safeParse(data);
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject participantId fallback (regression: ACL bypass)", () => {
+    // A participant UUID alone must never be accepted as proof of ownership.
+    // Server Actions are publicly callable and a UUID is not a credential.
     const data = {
-      ...validData,
-      participantId: undefined,
-      editToken: undefined,
+      participantId: "550e8400-e29b-41d4-a716-446655440000",
+      name: "Marie Martin",
+      guestCount: 1,
     };
     const result = updateParticipantSchema.safeParse(data);
     expect(result.success).toBe(false);

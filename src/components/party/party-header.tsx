@@ -6,7 +6,7 @@ import type { Party } from "@/lib/db/schema";
 import { placeTypeLabels } from "@/lib/validations/party";
 
 interface PartyHeaderProps {
-  party: Party;
+  party: Pick<Party, "name" | "address" | "placeType" | "dateStart">;
   coverImage?: string | null;
   coverImageSource?: "custom" | "panoramax" | null;
 }
