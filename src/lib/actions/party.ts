@@ -23,6 +23,10 @@ import { del } from "@vercel/blob";
 import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
 import { setAdminSessionCookie } from "@/lib/auth/admin-session";
+import {
+  publicPartyColumns,
+  publicParticipantColumns,
+} from "./party-public-columns";
 
 const VERCEL_BLOB_HOST = ".public.blob.vercel-storage.com";
 
@@ -153,37 +157,6 @@ export async function checkSlugAvailability(slug: string): Promise<boolean> {
   });
   return !existing;
 }
-
-// Public read-model: never expose adminToken, accessCode, organizerEmail,
-// participant editTokens, or participant PII (email/phone). The full row is
-// reserved for getPartyForAdmin, which authenticates with adminToken first.
-const publicPartyColumns = {
-  id: true,
-  slug: true,
-  name: true,
-  placeType: true,
-  address: true,
-  latitude: true,
-  longitude: true,
-  dateStart: true,
-  dateEnd: true,
-  description: true,
-  coverImageUrl: true,
-  isPrivate: true,
-  organizerName: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
-
-const publicParticipantColumns = {
-  id: true,
-  partyId: true,
-  name: true,
-  guestCount: true,
-  bringing: true,
-  isOrganizer: true,
-  createdAt: true,
-} as const;
 
 // React.cache() deduplicates this query within a single request
 // (e.g., when called from both generateMetadata and Page component)

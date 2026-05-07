@@ -42,6 +42,11 @@ import {
   createDiscussionChannel,
   updatePartyDetails,
 } from "./party";
+import {
+  publicPartyColumns,
+  publicParticipantColumns,
+} from "./party-public-columns";
+import { parties, participants } from "@/lib/db/schema";
 
 describe("party actions", () => {
   beforeEach(() => {
@@ -435,5 +440,47 @@ describe("party actions", () => {
 
       expect(result.success).toBe(true);
     });
+  });
+});
+
+describe("public read-model column allowlists", () => {
+  // These constants drive what getPartyBySlug returns to unauthenticated
+  // visitors via Server Components. A regression here re-introduces the
+  // adminToken / editToken / PII leak that motivated the security fix.
+  const FORBIDDEN_PARTY_COLUMNS = [
+    "adminToken",
+    "accessCode",
+    "organizerEmail",
+  ] as const;
+  const FORBIDDEN_PARTICIPANT_COLUMNS = [
+    "editToken",
+    "email",
+    "phone",
+  ] as const;
+
+  it("publicPartyColumns excludes secret and PII columns", () => {
+    for (const col of FORBIDDEN_PARTY_COLUMNS) {
+      expect(publicPartyColumns).not.toHaveProperty(col);
+    }
+  });
+
+  it("publicParticipantColumns excludes the editToken credential and PII", () => {
+    for (const col of FORBIDDEN_PARTICIPANT_COLUMNS) {
+      expect(publicParticipantColumns).not.toHaveProperty(col);
+    }
+  });
+
+  it("publicPartyColumns references only real columns on the parties table", () => {
+    const realColumns = Object.keys(parties);
+    for (const col of Object.keys(publicPartyColumns)) {
+      expect(realColumns).toContain(col);
+    }
+  });
+
+  it("publicParticipantColumns references only real columns on the participants table", () => {
+    const realColumns = Object.keys(participants);
+    for (const col of Object.keys(publicParticipantColumns)) {
+      expect(realColumns).toContain(col);
+    }
   });
 });
