@@ -3,7 +3,7 @@ import { fr } from "date-fns/locale";
 import type { Party } from "@/lib/db/schema";
 
 interface PartyInfoProps {
-  party: Party;
+  party: Pick<Party, "address" | "organizerName" | "dateStart" | "dateEnd">;
 }
 
 export function PartyInfo({ party }: PartyInfoProps) {

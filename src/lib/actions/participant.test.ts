@@ -30,7 +30,6 @@ import { sendOrganizerNewParticipantEmail } from "@/lib/email";
 import { mockParty } from "@/test/mocks/db";
 import {
   joinParty,
-  getParticipantById,
   getParticipantByToken,
   updateParticipant,
 } from "./participant";
@@ -180,60 +179,6 @@ describe("participant actions", () => {
     });
   });
 
-  describe("getParticipantById", () => {
-    it("should return participant when found", async () => {
-      const mockParticipant = {
-        id: "participant-123",
-        name: "Jean Dupont",
-        email: "jean@example.com",
-        guestCount: 2,
-      };
-
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([mockParticipant]),
-          }),
-        }),
-      });
-      (db.select as ReturnType<typeof vi.fn>).mockImplementation(mockSelect);
-
-      const result = await getParticipantById("participant-123");
-
-      expect(result).toEqual(mockParticipant);
-    });
-
-    it("should return null when not found", async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]),
-          }),
-        }),
-      });
-      (db.select as ReturnType<typeof vi.fn>).mockImplementation(mockSelect);
-
-      const result = await getParticipantById("non-existent");
-
-      expect(result).toBeNull();
-    });
-
-    it("should return null on error", async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockRejectedValue(new Error("DB error")),
-          }),
-        }),
-      });
-      (db.select as ReturnType<typeof vi.fn>).mockImplementation(mockSelect);
-
-      const result = await getParticipantById("participant-123");
-
-      expect(result).toBeNull();
-    });
-  });
-
   describe("getParticipantByToken", () => {
     it("should return participant when token matches", async () => {
       const mockParticipant = {
@@ -273,44 +218,41 @@ describe("participant actions", () => {
   });
 
   describe("updateParticipant", () => {
-    it("should reject when neither id nor token provided", async () => {
+    // We deliberately call updateParticipant with malformed inputs to assert
+    // that runtime validation rejects them. TypeScript would catch most of
+    // these at compile time, but the action is reachable from the network
+    // (Server Actions are public HTTP endpoints) so the runtime guard matters.
+    type AnyUpdateInput = Parameters<typeof updateParticipant>[0];
+
+    it("should reject when editToken is missing", async () => {
       const result = await updateParticipant({
         name: "Jean Dupont",
         guestCount: 1,
-      });
+      } as unknown as AnyUpdateInput);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("Identifiant");
+      expect(result).toHaveProperty("error");
+    });
+
+    it("should reject participantId fallback (regression: ACL bypass)", async () => {
+      const result = await updateParticipant({
+        participantId: "550e8400-e29b-41d4-a716-446655440000",
+        name: "Jean Dupont",
+        guestCount: 1,
+      } as unknown as AnyUpdateInput);
+
+      expect(result.success).toBe(false);
     });
 
     it("should reject invalid name", async () => {
       const result = await updateParticipant({
-        participantId: "550e8400-e29b-41d4-a716-446655440000",
+        editToken: "valid-token-1234567890",
         name: "J",
         guestCount: 1,
       });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("2 caractères");
-    });
-
-    it("should update participant by id", async () => {
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ id: "participant-123" }]),
-          }),
-        }),
-      });
-      (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
-
-      const result = await updateParticipant({
-        participantId: "550e8400-e29b-41d4-a716-446655440000",
-        name: "Jean Dupont Modifié",
-        guestCount: 3,
-      });
-
-      expect(result.success).toBe(true);
     });
 
     it("should update participant by token", async () => {
@@ -324,7 +266,7 @@ describe("participant actions", () => {
       (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
 
       const result = await updateParticipant({
-        editToken: "valid-token-1234",
+        editToken: "valid-token-1234567890",
         name: "Jean Dupont Modifié",
         guestCount: 3,
       });
@@ -343,7 +285,7 @@ describe("participant actions", () => {
       (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
 
       const result = await updateParticipant({
-        participantId: "550e8400-e29b-41d4-a716-446655440000",
+        editToken: "valid-token-1234567890",
         name: "Jean Dupont",
         guestCount: 1,
       });

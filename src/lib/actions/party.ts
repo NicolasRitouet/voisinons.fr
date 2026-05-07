@@ -154,19 +154,51 @@ export async function checkSlugAvailability(slug: string): Promise<boolean> {
   return !existing;
 }
 
+// Public read-model: never expose adminToken, accessCode, organizerEmail,
+// participant editTokens, or participant PII (email/phone). The full row is
+// reserved for getPartyForAdmin, which authenticates with adminToken first.
+const publicPartyColumns = {
+  id: true,
+  slug: true,
+  name: true,
+  placeType: true,
+  address: true,
+  latitude: true,
+  longitude: true,
+  dateStart: true,
+  dateEnd: true,
+  description: true,
+  coverImageUrl: true,
+  isPrivate: true,
+  organizerName: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+const publicParticipantColumns = {
+  id: true,
+  partyId: true,
+  name: true,
+  guestCount: true,
+  bringing: true,
+  isOrganizer: true,
+  createdAt: true,
+} as const;
+
 // React.cache() deduplicates this query within a single request
 // (e.g., when called from both generateMetadata and Page component)
 export const getPartyBySlug = cache(async (slug: string) => {
   return db.query.parties.findFirst({
     where: eq(parties.slug, slug),
+    columns: publicPartyColumns,
     with: {
-      participants: true,
+      participants: { columns: publicParticipantColumns },
       needs: {
         orderBy: (needs, { asc }) => [asc(needs.createdAt)],
         with: {
           contributions: {
             with: {
-              participant: true,
+              participant: { columns: publicParticipantColumns },
             },
           },
         },
@@ -178,6 +210,9 @@ export const getPartyBySlug = cache(async (slug: string) => {
     },
   });
 });
+
+export type PublicParty = NonNullable<Awaited<ReturnType<typeof getPartyBySlug>>>;
+export type PublicParticipant = PublicParty["participants"][number];
 
 export async function getPartyForAdmin(slug: string, token: string) {
   const party = await db.query.parties.findFirst({
