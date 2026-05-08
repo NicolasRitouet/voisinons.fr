@@ -68,11 +68,6 @@ export const createPartySchema = z
       .max(2048, "Le lien d'image est trop long")
       .optional()
       .or(z.literal("")),
-    isPrivate: z.boolean().default(false),
-    accessCode: z
-      .string()
-      .max(50, "Le code d'accès ne peut pas dépasser 50 caractères")
-      .optional(),
     organizerName: z
       .string()
       .min(2, "Le nom doit faire au moins 2 caractères")

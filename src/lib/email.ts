@@ -19,6 +19,12 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+// Strips CR/LF so user-controlled values can't inject SMTP headers when
+// interpolated into a Subject. Resend does not neutralise this automatically.
+function sanitizeSubject(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 interface PartyCreatedEmailData {
   to: string;
   organizerName: string;
@@ -49,11 +55,16 @@ export async function sendPartyCreatedEmail(data: PartyCreatedEmailData) {
 
   const fromEmail = process.env.RESEND_FROM_EMAIL || "Voisinons.fr <noreply@mail.voisinons.fr>";
 
+  const safeOrganizerName = escapeHtml(data.organizerName);
+  const safePartyName = escapeHtml(data.partyName);
+  const safePartyAddress = escapeHtml(data.partyAddress);
+  const subjectPartyName = sanitizeSubject(data.partyName);
+
   try {
     const { data: emailData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.to,
-      subject: `Votre fête "${data.partyName}" est créée !`,
+      subject: `Votre fête "${subjectPartyName}" est créée !`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -67,13 +78,13 @@ export async function sendPartyCreatedEmail(data: PartyCreatedEmailData) {
     <h1 style="color: #3D3D3D; margin: 10px 0 0 0;">voisinons.fr</h1>
   </div>
 
-  <p>Bonjour ${data.organizerName},</p>
+  <p>Bonjour ${safeOrganizerName},</p>
 
-  <p>Félicitations ! Votre fête <strong>"${data.partyName}"</strong> a bien été créée.</p>
+  <p>Félicitations ! Votre fête <strong>"${safePartyName}"</strong> a bien été créée.</p>
 
   <div style="background: #FFF8F0; border-radius: 10px; padding: 20px; margin: 20px 0;">
     <p style="margin: 0 0 10px 0;"><strong>Date :</strong> ${formattedDate}</p>
-    <p style="margin: 0;"><strong>Lieu :</strong> ${data.partyAddress}</p>
+    <p style="margin: 0;"><strong>Lieu :</strong> ${safePartyAddress}</p>
   </div>
 
   <h2 style="color: #3D3D3D; font-size: 18px;">Page publique de votre fête</h2>
@@ -152,11 +163,16 @@ export async function sendParticipantEditEmail(data: ParticipantEditEmailData) {
   const fromEmail =
     process.env.RESEND_FROM_EMAIL || "Voisinons.fr <noreply@mail.voisinons.fr>";
 
+  const safeParticipantName = escapeHtml(data.participantName);
+  const safePartyName = escapeHtml(data.partyName);
+  const safePartyAddress = escapeHtml(data.partyAddress);
+  const subjectPartyName = sanitizeSubject(data.partyName);
+
   try {
     const { data: emailData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.to,
-      subject: `Votre inscription à \"${data.partyName}\"`,
+      subject: `Votre inscription à "${subjectPartyName}"`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -170,13 +186,13 @@ export async function sendParticipantEditEmail(data: ParticipantEditEmailData) {
     <h1 style="color: #3D3D3D; margin: 10px 0 0 0;">voisinons.fr</h1>
   </div>
 
-  <p>Bonjour ${data.participantName},</p>
+  <p>Bonjour ${safeParticipantName},</p>
 
-  <p>Vous êtes bien inscrit(e) à la fête <strong>"${data.partyName}"</strong>.</p>
+  <p>Vous êtes bien inscrit(e) à la fête <strong>"${safePartyName}"</strong>.</p>
 
   <div style="background: #FFF8F0; border-radius: 10px; padding: 20px; margin: 20px 0;">
     <p style="margin: 0 0 10px 0;"><strong>Date :</strong> ${formattedDate}</p>
-    <p style="margin: 0;"><strong>Lieu :</strong> ${data.partyAddress}</p>
+    <p style="margin: 0;"><strong>Lieu :</strong> ${safePartyAddress}</p>
   </div>
 
   <h2 style="color: #3D3D3D; font-size: 18px;">Lien pour modifier votre participation</h2>
@@ -238,6 +254,7 @@ export async function sendOrganizerNewParticipantEmail(
   const safeOrganizerName = escapeHtml(data.organizerName);
   const safeParticipantName = escapeHtml(data.participantName);
   const safePartyName = escapeHtml(data.partyName);
+  const subjectPartyName = sanitizeSubject(data.partyName);
 
   const guestSuffix =
     data.participantGuestCount > 1
@@ -251,7 +268,7 @@ export async function sendOrganizerNewParticipantEmail(
     const { data: emailData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.to,
-      subject: `Nouveau voisin inscrit à "${data.partyName}"`,
+      subject: `Nouveau voisin inscrit à "${subjectPartyName}"`,
       html: `
 <!DOCTYPE html>
 <html>
