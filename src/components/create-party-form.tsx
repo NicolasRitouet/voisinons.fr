@@ -68,8 +68,6 @@ export function CreatePartyForm() {
       timeEnd: "",
       description: "",
       coverImageUrl: "",
-      isPrivate: false,
-      accessCode: "",
       organizerName: "",
       organizerEmail: "",
       notifyOnNewParticipant: false,
@@ -81,7 +79,6 @@ export function CreatePartyForm() {
   // useWatch is more efficient than form.watch() - only subscribes to specific fields
   const watchAddress = useWatch({ control: form.control, name: "address" });
   const watchSlug = useWatch({ control: form.control, name: "slug" });
-  const watchIsPrivate = useWatch({ control: form.control, name: "isPrivate" });
   const watchCoverImage = useWatch({ control: form.control, name: "coverImageUrl" });
 
   // Auto-generate name and slug from address
@@ -493,49 +490,6 @@ export function CreatePartyForm() {
                 </FormItem>
               )}
             />
-
-            {/* Private toggle */}
-            <FormField
-              control={form.control}
-              name="isPrivate"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Fête privée</FormLabel>
-                    <FormDescription>
-                      Si activé, un code d&apos;accès sera nécessaire pour voir la
-                      page
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {/* Access code (if private) */}
-            {watchIsPrivate && (
-              <FormField
-                control={form.control}
-                name="accessCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Code d&apos;accès</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ex: fete2024" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Les visiteurs devront entrer ce code pour accéder à la page
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
             <div className="border-t pt-6">
               <h3 className="font-[family-name:var(--font-space-grotesk)] font-bold text-lg text-neighbor-stone mb-4">

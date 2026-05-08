@@ -20,7 +20,6 @@ export const publicPartyColumns = {
   dateEnd: true,
   description: true,
   coverImageUrl: true,
-  isPrivate: true,
   organizerName: true,
   createdAt: true,
   updatedAt: true,

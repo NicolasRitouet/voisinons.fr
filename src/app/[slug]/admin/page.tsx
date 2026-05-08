@@ -233,9 +233,6 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                     >
                       {totalGuests} {totalGuests > 1 ? "personnes" : "personne"}
                     </Badge>
-                    {party.isPrivate && (
-                      <Badge className="bg-neighbor-stone text-white">Fête privée</Badge>
-                    )}
                   </div>
 
                   <AdminCopyButtons
