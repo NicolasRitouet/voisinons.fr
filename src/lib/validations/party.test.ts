@@ -19,7 +19,6 @@ describe("createPartySchema", () => {
     timeEnd: "21:00",
     description: "Une super fête de voisins",
     coverImageUrl: "https://example.com/image.jpg",
-    isPrivate: false,
     organizerName: "Jean Dupont",
     organizerEmail: "jean@example.com",
   };
