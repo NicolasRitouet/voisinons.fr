@@ -1,5 +1,5 @@
 import type { DiscussionChannel } from "@/lib/db/schema";
-import { channelTypeLabels } from "@/lib/validations/channel";
+import { channelTypeLabels, isSafeChannelUrl } from "@/lib/validations/channel";
 
 interface PartyChannelsProps {
   channels: DiscussionChannel[];
@@ -16,22 +16,34 @@ export function PartyChannels({ channels }: PartyChannelsProps) {
         Canal de communication
       </h2>
       <div className="space-y-3">
-        {channels.map((channel) => (
-          <div key={channel.id} className="border border-gray-100 rounded-lg p-4">
-            <p className="text-sm text-gray-500">
-              {channelTypeLabels[channel.type as keyof typeof channelTypeLabels] || "Canal"}
-            </p>
-            <p className="font-medium text-neighbor-stone">{channel.name}</p>
-            <a
-              href={channel.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm text-neighbor-orange break-all"
-            >
-              {channel.url}
-            </a>
-          </div>
-        ))}
+        {channels.map((channel) => {
+          // Defense-in-depth against rows that may have been stored before
+          // the schema-level scheme allowlist was introduced. Render the URL
+          // as plain text rather than an active <a href> when not safe.
+          const safe = isSafeChannelUrl(channel.url);
+          return (
+            <div key={channel.id} className="border border-gray-100 rounded-lg p-4">
+              <p className="text-sm text-gray-500">
+                {channelTypeLabels[channel.type as keyof typeof channelTypeLabels] || "Canal"}
+              </p>
+              <p className="font-medium text-neighbor-stone">{channel.name}</p>
+              {safe ? (
+                <a
+                  href={channel.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-neighbor-orange break-all"
+                >
+                  {channel.url}
+                </a>
+              ) : (
+                <span className="text-sm text-gray-500 break-all">
+                  {channel.url}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
