@@ -19,6 +19,12 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+// Strips CR/LF so user-controlled values can't inject SMTP headers when
+// interpolated into a Subject. Resend does not neutralise this automatically.
+function sanitizeSubject(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 interface PartyCreatedEmailData {
   to: string;
   organizerName: string;
@@ -52,12 +58,13 @@ export async function sendPartyCreatedEmail(data: PartyCreatedEmailData) {
   const safeOrganizerName = escapeHtml(data.organizerName);
   const safePartyName = escapeHtml(data.partyName);
   const safePartyAddress = escapeHtml(data.partyAddress);
+  const subjectPartyName = sanitizeSubject(data.partyName);
 
   try {
     const { data: emailData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.to,
-      subject: `Votre fête "${data.partyName}" est créée !`,
+      subject: `Votre fête "${subjectPartyName}" est créée !`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -159,12 +166,13 @@ export async function sendParticipantEditEmail(data: ParticipantEditEmailData) {
   const safeParticipantName = escapeHtml(data.participantName);
   const safePartyName = escapeHtml(data.partyName);
   const safePartyAddress = escapeHtml(data.partyAddress);
+  const subjectPartyName = sanitizeSubject(data.partyName);
 
   try {
     const { data: emailData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.to,
-      subject: `Votre inscription à \"${data.partyName}\"`,
+      subject: `Votre inscription à "${subjectPartyName}"`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -246,6 +254,7 @@ export async function sendOrganizerNewParticipantEmail(
   const safeOrganizerName = escapeHtml(data.organizerName);
   const safeParticipantName = escapeHtml(data.participantName);
   const safePartyName = escapeHtml(data.partyName);
+  const subjectPartyName = sanitizeSubject(data.partyName);
 
   const guestSuffix =
     data.participantGuestCount > 1
@@ -259,7 +268,7 @@ export async function sendOrganizerNewParticipantEmail(
     const { data: emailData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.to,
-      subject: `Nouveau voisin inscrit à "${data.partyName}"`,
+      subject: `Nouveau voisin inscrit à "${subjectPartyName}"`,
       html: `
 <!DOCTYPE html>
 <html>
