@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, gte, inArray, lte, sql } from "drizzle-orm";
+import { differenceInDays } from "date-fns";
 import { db } from "@/lib/db";
 import { parties, participants } from "@/lib/db/schema";
 import { sendOrganizerReminderEmail } from "@/lib/email";
+
+const EMAIL_CONCURRENCY = 10;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,10 +71,11 @@ export async function GET(request: NextRequest) {
         )
       );
 
+    type Eligible = (typeof eligibleParties)[number];
+    const toSend: Array<{ party: Eligible; bucket: typeof REMINDER_BUCKETS[number]; daysUntilParty: number }> = [];
+
     for (const party of eligibleParties) {
-      const daysUntilParty = Math.round(
-        (party.dateStart.getTime() - now.getTime()) / 86_400_000
-      );
+      const daysUntilParty = differenceInDays(party.dateStart, now);
 
       const bucket = REMINDER_BUCKETS.find(
         (b) => daysUntilParty >= b.minDays && daysUntilParty <= b.maxDays
@@ -88,39 +92,60 @@ export async function GET(request: NextRequest) {
       }
 
       if (party.lastReminderAt) {
-        const daysSinceReminder =
-          (now.getTime() - party.lastReminderAt.getTime()) / 86_400_000;
+        const daysSinceReminder = differenceInDays(now, party.lastReminderAt);
         if (daysSinceReminder < bucket.cooldownDays) {
           skipped.push({
             slug: party.slug,
-            reason: `cooldown (${bucket.cooldownDays}d, last sent ${daysSinceReminder.toFixed(1)}d ago)`,
+            reason: `cooldown (${bucket.cooldownDays}d, last sent ${daysSinceReminder}d ago)`,
           });
           continue;
         }
       }
 
-      const result = await sendOrganizerReminderEmail({
-        to: party.organizerEmail,
-        organizerName: party.organizerName,
-        partyName: party.name,
-        partySlug: party.slug,
-        adminToken: party.adminToken,
-        partyDate: party.dateStart,
-        daysUntilParty,
-        participantsCount: Number(party.participantCount),
+      toSend.push({ party, bucket, daysUntilParty });
+    }
+
+    // Send in bounded-concurrency chunks so 50 mail sends don't serialise to
+    // 25s+ (each Resend call is ~500ms). EMAIL_CONCURRENCY caps in-flight
+    // requests to stay friendly to Resend rate limits.
+    const sentIds: string[] = [];
+    for (let i = 0; i < toSend.length; i += EMAIL_CONCURRENCY) {
+      const chunk = toSend.slice(i, i + EMAIL_CONCURRENCY);
+      const results = await Promise.allSettled(
+        chunk.map(({ party, daysUntilParty }) =>
+          sendOrganizerReminderEmail({
+            to: party.organizerEmail,
+            organizerName: party.organizerName,
+            partyName: party.name,
+            partySlug: party.slug,
+            adminToken: party.adminToken,
+            partyDate: party.dateStart,
+            daysUntilParty,
+            participantsCount: Number(party.participantCount),
+          })
+        )
+      );
+
+      results.forEach((r, idx) => {
+        const { party, bucket, daysUntilParty } = chunk[idx];
+        if (r.status === "rejected") {
+          errors.push({ slug: party.slug, error: String(r.reason) });
+          return;
+        }
+        if (!r.value.success) {
+          errors.push({ slug: party.slug, error: r.value.error ?? "unknown" });
+          return;
+        }
+        sentIds.push(party.id);
+        sent.push({ slug: party.slug, bucket: bucket.name, days: daysUntilParty });
       });
+    }
 
-      if (!result.success) {
-        errors.push({ slug: party.slug, error: result.error ?? "unknown" });
-        continue;
-      }
-
+    if (sentIds.length > 0) {
       await db
         .update(parties)
         .set({ lastReminderAt: now })
-        .where(eq(parties.id, party.id));
-
-      sent.push({ slug: party.slug, bucket: bucket.name, days: daysUntilParty });
+        .where(inArray(parties.id, sentIds));
     }
 
     return NextResponse.json(
