@@ -29,6 +29,13 @@
       "when": 1777831303069,
       "tag": "0003_parties_notify_on_new_participant",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778229662326,
+      "tag": "0004_parties_last_reminder_at",
+      "breakpoints": true
     }
   ]
 }
