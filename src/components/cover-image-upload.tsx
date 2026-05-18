@@ -8,6 +8,9 @@ interface Props {
   onError: (msg: string) => void;
 }
 
+const MAX_BYTES = 4 * 1024 * 1024;
+const TOO_LARGE_MESSAGE = "Image trop volumineuse (4 Mo max). Pensez à la compresser avant de la téléverser.";
+
 export function CoverImageUpload({ onUploaded, onError }: Props) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -15,6 +18,12 @@ export function CoverImageUpload({ onUploaded, onError }: Props) {
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_BYTES) {
+      onError(TOO_LARGE_MESSAGE);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
 
     setUploading(true);
     try {
@@ -24,7 +33,12 @@ export function CoverImageUpload({ onUploaded, onError }: Props) {
         method: "POST",
         body: formData,
       });
-      const data = (await res.json()) as { url?: string; error?: string };
+      if (res.status === 413) {
+        throw new Error(TOO_LARGE_MESSAGE);
+      }
+      const data = await res
+        .json()
+        .catch(() => ({}) as { url?: string; error?: string });
       if (!res.ok || !data.url) {
         throw new Error(data.error ?? "Erreur d'upload");
       }
