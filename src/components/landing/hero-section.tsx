@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export function HeroSection() {
   return (
@@ -9,36 +8,6 @@ export function HeroSection() {
       <div className="blob-bg bg-neighbor-orange/20 w-64 h-64 sm:w-[30rem] sm:h-[30rem] rounded-full bottom-0 -right-20 sm:-right-40" />
 
       <div className="max-w-6xl mx-auto text-center relative z-10">
-        {/* Social Proof Pill */}
-        <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-1 mb-8 shadow-sm reveal">
-          <span className="flex -space-x-2">
-            <Image
-              className="w-6 h-6 rounded-full border border-white object-cover"
-              src="https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=100&h=100&auto=format&fit=crop"
-              alt="Utilisateur"
-              width={24}
-              height={24}
-            />
-            <Image
-              className="w-6 h-6 rounded-full border border-white object-cover"
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&auto=format&fit=crop"
-              alt="Utilisateur"
-              width={24}
-              height={24}
-            />
-            <Image
-              className="w-6 h-6 rounded-full border border-white object-cover"
-              src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&auto=format&fit=crop"
-              alt="Utilisateur"
-              width={24}
-              height={24}
-            />
-          </span>
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide pr-1">
-            Rejoignez les premiers testeurs
-          </span>
-        </div>
-
         <h1 className="font-[family-name:var(--font-space-grotesk)] font-bold text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tighter text-neighbor-stone mb-8 reveal delay-100">
           Faites vibrer <br />
           votre{" "}
