@@ -39,6 +39,33 @@ describe("CoverImageUpload", () => {
     expect(onUploaded).not.toHaveBeenCalled();
   });
 
+  it("accepte un fichier exactement à 4 Mo (limite inclusive)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ url: "https://blob.example/exact-4mb.jpg" }),
+      })
+    );
+
+    const onUploaded = vi.fn();
+    const onError = vi.fn();
+    const { container } = render(
+      <CoverImageUpload onUploaded={onUploaded} onError={onError} />
+    );
+
+    const exactLimit = makeFile(4 * 1024 * 1024);
+    fireEvent.change(getFileInput(container), {
+      target: { files: [exactLimit] },
+    });
+
+    await waitFor(() =>
+      expect(onUploaded).toHaveBeenCalledWith("https://blob.example/exact-4mb.jpg")
+    );
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("appelle onUploaded avec l'URL en cas de succès", async () => {
     vi.stubGlobal(
       "fetch",
