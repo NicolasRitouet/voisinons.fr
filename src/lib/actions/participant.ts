@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { participants, parties } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { generateToken } from "@/lib/crypto";
 import {
   sendParticipantEditEmail,
@@ -11,8 +11,10 @@ import {
 import {
   joinPartySchema,
   updateParticipantSchema,
+  adminUpdateOrganizerSchema,
   type JoinPartyInput,
   type UpdateParticipantInput,
+  type AdminUpdateOrganizerInput,
 } from "@/lib/validations/participant";
 
 export async function joinParty(data: JoinPartyInput) {
@@ -144,6 +146,64 @@ export async function updateParticipant(data: UpdateParticipantInput) {
     return { success: true as const };
   } catch (error) {
     console.error("Failed to update participant:", error);
+    return {
+      success: false as const,
+      error: "Une erreur est survenue lors de la mise à jour",
+    };
+  }
+}
+
+// Update the organizer's own RSVP line from the admin dashboard. Unlike
+// updateParticipant, this is authorized by the party's adminToken (the
+// organizer has no editToken) and the WHERE clause is locked to
+// isOrganizer = true so it can only ever touch the organizer's own row.
+export async function adminUpdateOrganizerParticipant(
+  data: AdminUpdateOrganizerInput
+) {
+  const validated = adminUpdateOrganizerSchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.issues[0]?.message || "Données invalides",
+    };
+  }
+
+  const { partyId, token, name, email, phone, guestCount, bringing } =
+    validated.data;
+
+  // Validate token inline - only update if the adminToken matches the party.
+  const party = await db.query.parties.findFirst({
+    where: eq(parties.id, partyId),
+    columns: { id: true, adminToken: true },
+  });
+
+  if (!party || party.adminToken !== token) {
+    return { success: false as const, error: "Non autorisé" };
+  }
+
+  try {
+    const [updated] = await db
+      .update(participants)
+      .set({ name, email, phone, guestCount, bringing })
+      .where(
+        and(
+          eq(participants.partyId, partyId),
+          eq(participants.isOrganizer, true)
+        )
+      )
+      .returning({ id: participants.id });
+
+    if (!updated) {
+      return {
+        success: false as const,
+        error: "Participant organisateur non trouvé",
+      };
+    }
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to update organizer participant:", error);
     return {
       success: false as const,
       error: "Une erreur est survenue lors de la mise à jour",
