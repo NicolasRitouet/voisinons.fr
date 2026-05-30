@@ -16,6 +16,7 @@ import { AdminEditPartyForm } from "@/components/party/admin-edit-party-form";
 import { AdminChannelForm } from "@/components/party/admin-channel-form";
 import { AdminChannelList } from "@/components/party/admin-channel-list";
 import { AdminNeeds } from "@/components/party/admin-needs";
+import { AdminOrganizerEdit } from "@/components/party/admin-organizer-edit";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -87,6 +88,10 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
   const emails = emailsList.join(", ");
   const phones = phonesList.join(", ");
   const contributions = contributionsList.join("\n");
+
+  // The organizer is enrolled as a participant (isOrganizer = true) but has no
+  // editToken, so they can only edit their own RSVP from here.
+  const organizer = party.participants.find((p) => p.isOrganizer);
 
   const publicUrl = `${SITE_URL}/${party.slug}`;
   const adminUrl = `${SITE_URL}/${party.slug}/admin?token=${token}`;
@@ -216,6 +221,19 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
             defaultTabId="participants"
           >
             <AdminTabPanel id="participants">
+              {organizer && (
+                <div className="mb-6">
+                  <AdminOrganizerEdit
+                    partyId={party.id}
+                    token={token}
+                    defaultName={organizer.name}
+                    defaultEmail={organizer.email ?? ""}
+                    defaultPhone={organizer.phone ?? ""}
+                    defaultGuestCount={organizer.guestCount || 1}
+                    defaultBringing={organizer.bringing ?? ""}
+                  />
+                </div>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle className="font-[family-name:var(--font-space-grotesk)]">

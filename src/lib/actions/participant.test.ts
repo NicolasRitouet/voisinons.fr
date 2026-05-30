@@ -25,15 +25,16 @@ vi.mock("@/lib/crypto", () => ({
   generateToken: vi.fn(() => "mock-token-1234567890abcdef"),
 }));
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { participants } from "@/lib/db/schema";
 import { sendOrganizerNewParticipantEmail } from "@/lib/email";
-import { mockParty } from "@/test/mocks/db";
+import { mockParty, mockParticipant } from "@/test/mocks/db";
 import {
   joinParty,
   getParticipantByToken,
   updateParticipant,
+  adminUpdateOrganizerParticipant,
 } from "./participant";
 
 describe("participant actions", () => {
@@ -300,6 +301,89 @@ describe("participant actions", () => {
         name: "Jean Dupont",
         guestCount: 1,
       });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("non trouvé");
+    });
+  });
+
+  describe("adminUpdateOrganizerParticipant", () => {
+    const validInput = {
+      partyId: mockParty.id,
+      token: mockParty.adminToken,
+      name: "Jean Dupont",
+      guestCount: 4,
+    };
+
+    it("should reject invalid data", async () => {
+      const result = await adminUpdateOrganizerParticipant({
+        partyId: "not-a-uuid",
+        token: mockParty.adminToken,
+        name: "Jean Dupont",
+        guestCount: 1,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result).toHaveProperty("error");
+    });
+
+    it("should reject when the admin token does not match", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: mockParty.id,
+        adminToken: "the-real-token",
+      });
+
+      const result = await adminUpdateOrganizerParticipant({
+        ...validInput,
+        token: "wrong-token-1234567890",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Non autorisé");
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    it("should update the organizer row scoped to partyId + isOrganizer", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: mockParty.id,
+        adminToken: mockParty.adminToken,
+      });
+      const mockWhere = vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: mockParticipant.id }]),
+      });
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({ where: mockWhere }),
+      });
+      (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
+
+      const result = await adminUpdateOrganizerParticipant(validInput);
+
+      expect(result.success).toBe(true);
+      // The WHERE must combine partyId AND isOrganizer so a non-organizer row
+      // can never be touched via this admin action.
+      expect(mockWhere).toHaveBeenCalledWith(
+        and(
+          eq(participants.partyId, mockParty.id),
+          eq(participants.isOrganizer, true)
+        )
+      );
+    });
+
+    it("should return error when no organizer row is found", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: mockParty.id,
+        adminToken: mockParty.adminToken,
+      });
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
+
+      const result = await adminUpdateOrganizerParticipant(validInput);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("non trouvé");
