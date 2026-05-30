@@ -49,6 +49,14 @@ import {
 } from "./party-public-columns";
 import { parties, participants } from "@/lib/db/schema";
 
+// Party dates must be today or in the future — createPartySchema and
+// updatePartyDetailsSchema reject past dates. Compute the date dynamically
+// (30 days out) so these tests never become time-bombs that start failing
+// once a hardcoded date slips into the past.
+const FUTURE_DATE = new Date(
+  Date.now() + 30 * 24 * 60 * 60 * 1000
+).toISOString();
+
 describe("party actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -141,7 +149,7 @@ describe("party actions", () => {
         slug: "fete-rue-paix",
         placeType: "rue",
         address: "12 rue de la Paix, 75001 Paris",
-        date: new Date(2026, 4, 29).toISOString(),
+        date: FUTURE_DATE,
         timeStart: "14:00",
         timeEnd: "21:00",
         organizerName: "Jean Dupont",
@@ -280,7 +288,7 @@ describe("party actions", () => {
         partyId: VALID_PARTY_ID,
         token: TOKEN,
         address: "12 rue de la Paix, Paris",
-        date: new Date(2026, 4, 29).toISOString(),
+        date: FUTURE_DATE,
         timeStart: "18:00",
         timeEnd: "23:00",
         ...overrides,
