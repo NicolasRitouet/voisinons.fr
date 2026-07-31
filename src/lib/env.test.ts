@@ -49,7 +49,34 @@ describe("resolveEnv", () => {
     expect(env.NEXT_PUBLIC_APP_URL).toBe("https://www.voisinons.fr");
   });
 
-  it("lets an explicit value override the production fallback", () => {
+  // Preview deployments build with NODE_ENV=production and no project URL set.
+  // Falling back to the canonical domain there would make a preview's sitemap,
+  // emails and PDF QR codes point at production.
+  it("makes a preview deployment reference itself", () => {
+    const env = resolveEnv({
+      ...VALID,
+      NODE_ENV: "production",
+      VERCEL_ENV: "preview",
+      VERCEL_URL: "voisinons-fr-git-fix-audit.vercel.app",
+    });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe(
+      "https://voisinons-fr-git-fix-audit.vercel.app"
+    );
+  });
+
+  it("keeps the canonical domain for the production deployment", () => {
+    const env = resolveEnv({
+      ...VALID,
+      NODE_ENV: "production",
+      VERCEL_ENV: "production",
+      VERCEL_URL: "voisinons-fr-abc123.vercel.app",
+    });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("https://www.voisinons.fr");
+  });
+
+  it("lets an explicit value override every fallback", () => {
     const env = resolveEnv({
       ...VALID,
       NODE_ENV: "production",

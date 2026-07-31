@@ -16,6 +16,11 @@ export const envSchema = z.object({
   // Required in production, defaulted in development — see resolveAppUrl.
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 
+  // Injected by Vercel. VERCEL_URL is the deployment-specific hostname, which
+  // lets a preview reference itself instead of production.
+  VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
+  VERCEL_URL: z.string().optional(),
+
   // System
   NODE_ENV: z
     .enum(["development", "production", "test"])
@@ -52,6 +57,13 @@ function resolveAppUrl(parsed: z.infer<typeof envSchema>): string {
   if (parsed.NEXT_PUBLIC_APP_URL) {
     return parsed.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
   }
+  // Preview deployments build with NODE_ENV=production but have no project
+  // URL configured; pointing them at the canonical domain would make their
+  // sitemap, emails and QR codes reference production instead of themselves.
+  if (parsed.VERCEL_ENV === "preview" && parsed.VERCEL_URL) {
+    return `https://${parsed.VERCEL_URL}`;
+  }
+
   return parsed.NODE_ENV === "production" ? PROD_APP_URL : DEV_APP_URL;
 }
 
