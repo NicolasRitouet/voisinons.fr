@@ -25,12 +25,16 @@ export const envSchema = z.object({
 export type Env = z.infer<typeof envSchema> & { NEXT_PUBLIC_APP_URL: string };
 
 const DEV_APP_URL = "http://localhost:3000";
+// Canonical production domain. Before this file owned the value, site.ts
+// already fell back to it, which is why production never needed the variable
+// set — only the two files disagreeing made it look required.
+const PROD_APP_URL = "https://www.voisinons.fr";
 
 // `next build` imports every module to collect routes and metadata, and can run
 // without the runtime secrets. NEXT_PUBLIC_APP_URL is not one of them: it is a
 // build-time public variable, baked into the sitemap, robots.txt and every
-// metadata URL. A missing value must fail the build rather than ship localhost
-// links that no runtime check will ever get to catch.
+// metadata URL, so its fallback is environment-dependent rather than a single
+// localhost default that would silently ship to production.
 const buildPhaseSchema = envSchema.extend({
   DATABASE_URL: z
     .string()
@@ -48,12 +52,7 @@ function resolveAppUrl(parsed: z.infer<typeof envSchema>): string {
   if (parsed.NEXT_PUBLIC_APP_URL) {
     return parsed.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
   }
-  if (parsed.NODE_ENV === "production") {
-    throw new Error(
-      "NEXT_PUBLIC_APP_URL is required in production: it builds the links in emails, PDFs and QR codes."
-    );
-  }
-  return DEV_APP_URL;
+  return parsed.NODE_ENV === "production" ? PROD_APP_URL : DEV_APP_URL;
 }
 
 export function resolveEnv(

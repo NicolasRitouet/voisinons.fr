@@ -40,12 +40,23 @@ describe("resolveEnv", () => {
     expect(resolveEnv(VALID).NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
   });
 
-  // Silently defaulting here would send localhost links in production emails,
-  // PDF QR codes and the sitemap.
-  it("refuses to guess the app URL in production", () => {
-    expect(() => resolveEnv({ ...VALID, NODE_ENV: "production" })).toThrow(
-      /NEXT_PUBLIC_APP_URL is required in production/
-    );
+  // The regression that broke a deploy: a single localhost default shared by
+  // every environment. The production fallback must be the canonical domain,
+  // never localhost, and never a hard failure — the variable is optional.
+  it("falls back to the canonical domain in production, never localhost", () => {
+    const env = resolveEnv({ ...VALID, NODE_ENV: "production" });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("https://www.voisinons.fr");
+  });
+
+  it("lets an explicit value override the production fallback", () => {
+    const env = resolveEnv({
+      ...VALID,
+      NODE_ENV: "production",
+      NEXT_PUBLIC_APP_URL: "https://preview.voisinons.fr",
+    });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("https://preview.voisinons.fr");
   });
 
   // The regression this guards: a missing DATABASE_URL used to be swallowed at
@@ -72,12 +83,9 @@ describe("resolveEnv", () => {
     expect(env.BLOB_READ_WRITE_TOKEN).toBe("");
   });
 
-  // NEXT_PUBLIC_APP_URL is baked into the sitemap, robots.txt and metadata at
-  // build time. Defaulting it here would ship localhost links to production
-  // with no runtime check left to catch them.
-  it("still demands the app URL during a production build", () => {
-    expect(() =>
-      resolveEnv({ NODE_ENV: "production" }, { buildPhase: true })
-    ).toThrow(/NEXT_PUBLIC_APP_URL is required in production/);
+  it("never yields a localhost URL to a production build", () => {
+    const env = resolveEnv({ NODE_ENV: "production" }, { buildPhase: true });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("https://www.voisinons.fr");
   });
 });
