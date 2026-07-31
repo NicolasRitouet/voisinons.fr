@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { participants, parties } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { generateToken } from "@/lib/crypto";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   sendParticipantEditEmail,
   sendOrganizerNewParticipantEmail,
@@ -203,13 +204,7 @@ export async function adminUpdateOrganizerParticipant(
   const { partyId, token, name, email, phone, guestCount, bringing } =
     validated.data;
 
-  // Validate token inline - only update if the adminToken matches the party.
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!(await requireAdmin({ partyId }, token))) {
     return { success: false as const, error: "Non autorisé" };
   }
 
