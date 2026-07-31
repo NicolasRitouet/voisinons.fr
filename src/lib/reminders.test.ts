@@ -73,6 +73,23 @@ describe("selectReminders", () => {
     expect(due).toHaveLength(1);
   });
 
+  // With 24h-period math the same party drifted between buckets depending on
+  // what time the cron happened to fire relative to the party's start time.
+  it("puts a party in the same bucket whatever time the cron runs", () => {
+    const partyDate = new Date(2026, 3, 15, 19, 0, 0);
+    const buckets = [0, 6, 8, 12, 18, 23].map((hour) => {
+      const runAt = new Date(2026, 3, 1, hour, 0, 0);
+      const { due } = selectReminders(
+        [candidate({ dateStart: partyDate })],
+        runAt
+      );
+      return due[0]?.bucket.name ?? null;
+    });
+
+    expect(new Set(buckets).size).toBe(1);
+    expect(buckets[0]).toBe("J-14");
+  });
+
   it("treats the cooldown boundary as elapsed", () => {
     const justInside = selectReminders(
       [candidate({ lastReminderAt: addDays(NOW, -4) })],

@@ -1,4 +1,4 @@
-import { differenceInDays } from "date-fns";
+import { differenceInCalendarDays } from "date-fns";
 
 export interface ReminderBucket {
   name: "J-14" | "J-7" | "J-3";
@@ -70,7 +70,10 @@ export function selectReminders<T extends ReminderCandidate>(
       continue;
     }
 
-    const daysUntilParty = differenceInDays(party.dateStart, now);
+    // Calendar days, not 24h periods: differenceInDays is anchored on the
+    // time of day, so the same party would land in different buckets depending
+    // on what time the cron happened to run.
+    const daysUntilParty = differenceInCalendarDays(party.dateStart, now);
     const bucket = bucketFor(daysUntilParty);
 
     if (!bucket) {
@@ -88,7 +91,7 @@ export function selectReminders<T extends ReminderCandidate>(
     }
 
     if (party.lastReminderAt) {
-      const daysSince = differenceInDays(now, party.lastReminderAt);
+      const daysSince = differenceInCalendarDays(now, party.lastReminderAt);
       if (daysSince < bucket.cooldownDays) {
         skipped.push({
           slug: party.slug,
