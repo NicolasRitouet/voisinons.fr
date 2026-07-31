@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { participants, parties } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { generateToken } from "@/lib/crypto";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import {
@@ -129,10 +130,19 @@ export async function deleteParticipant(data: DeleteParticipantInput) {
     const [deleted] = await db
       .delete(participants)
       .where(eq(participants.editToken, validated.data.editToken))
-      .returning({ id: participants.id });
+      .returning({ id: participants.id, partyId: participants.partyId });
 
     if (!deleted) {
       return { success: false as const, error: "Participant non trouvé" };
+    }
+
+    const party = await db.query.parties.findFirst({
+      where: eq(parties.id, deleted.partyId),
+      columns: { slug: true },
+    });
+    if (party) {
+      revalidatePath(`/${party.slug}`);
+      revalidatePath(`/${party.slug}/participer`);
     }
 
     return { success: true as const };

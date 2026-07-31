@@ -173,14 +173,14 @@ describe("deletePartyById", () => {
       coverImageUrl: null,
     });
 
-    expect(await deletePartyById("p1", "wrong-token")).toBe(false);
+    expect(await deletePartyById("p1", "wrong-token")).toBeNull();
     expect(deleteWhere).not.toHaveBeenCalled();
   });
 
   it("refuses an unknown party", async () => {
     findFirst.mockResolvedValue(undefined);
 
-    expect(await deletePartyById("nope", "any-token")).toBe(false);
+    expect(await deletePartyById("nope", "any-token")).toBeNull();
     expect(deleteWhere).not.toHaveBeenCalled();
   });
 
@@ -188,12 +188,15 @@ describe("deletePartyById", () => {
     findFirst
       .mockResolvedValueOnce({
         id: "p1",
+        slug: "rue-jaboulay-lyon",
         adminToken: "real-token",
         coverImageUrl: `${BLOB}/cover.jpg`,
       })
       .mockResolvedValueOnce(undefined);
 
-    expect(await deletePartyById("p1", "real-token")).toBe(true);
+    expect(await deletePartyById("p1", "real-token")).toEqual({
+      slug: "rue-jaboulay-lyon",
+    });
     expect(deleteWhere).toHaveBeenCalledTimes(1);
     expect(del).toHaveBeenCalledWith(`${BLOB}/cover.jpg`);
   });
@@ -202,12 +205,13 @@ describe("deletePartyById", () => {
     findFirst
       .mockResolvedValueOnce({
         id: "p1",
+        slug: "rue-jaboulay-lyon",
         adminToken: "real-token",
         coverImageUrl: `${BLOB}/shared.jpg`,
       })
       .mockResolvedValueOnce({ id: "p2" });
 
-    expect(await deletePartyById("p1", "real-token")).toBe(true);
+    expect(await deletePartyById("p1", "real-token")).not.toBeNull();
     expect(del).not.toHaveBeenCalled();
   });
 });

@@ -65,7 +65,7 @@ npx @keywaysh/cli pull -e development
 | `DATABASE_URL` | URL de connexion PostgreSQL | Oui |
 | `BLOB_READ_WRITE_TOKEN` | Token Vercel Blob (images de couverture) | Oui |
 | `RESEND_API_KEY` | Clé API Resend pour les emails | Non |
-| `NEXT_PUBLIC_APP_URL` | URL de l'application | Non |
+| `NEXT_PUBLIC_APP_URL` | URL publique de l'application | Oui en production |
 | `CRON_SECRET` | Secret partagé du cron de purge RGPD | Oui en production |
 
 > **`CRON_SECRET`** protège `/api/cron/purge`, qui applique la suppression des

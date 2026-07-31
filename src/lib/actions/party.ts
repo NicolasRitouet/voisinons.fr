@@ -1,6 +1,7 @@
 "use server";
 
 import { cache } from "react";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { parties, participants, partyUpdates, discussionChannels, needs } from "@/lib/db/schema";
 import { sendPartyCreatedEmail } from "@/lib/email";
@@ -352,10 +353,15 @@ export async function deleteParty(data: DeletePartyInput) {
   const { partyId, token } = validated.data;
 
   try {
-    const deleted = await deletePartyById(partyId, token);
-    if (!deleted) {
+    const result = await deletePartyById(partyId, token);
+    if (!result) {
       return { success: false as const, error: { _form: ["Non autorisé"] } };
     }
+
+    // The public page is force-dynamic but still served from the router cache
+    // on client navigations; without this it keeps showing a deleted party.
+    revalidatePath(`/${result.slug}`);
+    revalidatePath(`/${result.slug}/participer`);
     return { success: true as const };
   } catch (error) {
     console.error("Failed to delete party:", error);

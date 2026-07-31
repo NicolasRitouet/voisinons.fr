@@ -179,7 +179,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <p className="text-sm text-gray-500 pt-8 border-t">
-            Dernière mise à jour : Janvier 2026
+            Dernière mise à jour : Juillet 2026
           </p>
         </div>
       </div>

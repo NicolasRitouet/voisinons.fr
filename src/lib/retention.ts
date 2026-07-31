@@ -132,9 +132,9 @@ export async function runRetentionPurge(
 export async function deletePartyById(
   partyId: string,
   adminToken: string
-): Promise<boolean> {
+): Promise<{ slug: string } | null> {
   const party = await requireAdmin({ partyId }, adminToken);
-  if (!party) return false;
+  if (!party) return null;
 
   await db.delete(parties).where(eq(parties.id, partyId));
 
@@ -149,5 +149,5 @@ export async function deletePartyById(
     if (!stillReferenced) await deleteBlob(party.coverImageUrl);
   }
 
-  return true;
+  return { slug: party.slug };
 }

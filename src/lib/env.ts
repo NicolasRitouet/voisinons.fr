@@ -26,19 +26,28 @@ export type Env = z.infer<typeof envSchema> & { NEXT_PUBLIC_APP_URL: string };
 
 const DEV_APP_URL = "http://localhost:3000";
 
-// `next build` imports every module to collect routes and metadata, sometimes
-// without the runtime secrets. That phase — and only that phase — may skip
-// validation. At request time a missing variable has to crash loudly instead
-// of silently falling through to a placeholder database.
-const BUILD_PLACEHOLDER: Env = {
-  DATABASE_URL: "",
-  BLOB_READ_WRITE_TOKEN: "",
-  NEXT_PUBLIC_APP_URL: DEV_APP_URL,
-  NODE_ENV: "production",
-};
+// `next build` imports every module to collect routes and metadata, and can run
+// without the runtime secrets. NEXT_PUBLIC_APP_URL is not one of them: it is a
+// build-time public variable, baked into the sitemap, robots.txt and every
+// metadata URL. A missing value must fail the build rather than ship localhost
+// links that no runtime check will ever get to catch.
+const buildPhaseSchema = envSchema.extend({
+  DATABASE_URL: z
+    .string()
+    .optional()
+    .transform((value) => value ?? ""),
+  BLOB_READ_WRITE_TOKEN: z
+    .string()
+    .optional()
+    .transform((value) => value ?? ""),
+});
 
 function resolveAppUrl(parsed: z.infer<typeof envSchema>): string {
-  if (parsed.NEXT_PUBLIC_APP_URL) return parsed.NEXT_PUBLIC_APP_URL;
+  // url() accepts a trailing slash and consumers concatenate `${SITE_URL}/...`,
+  // so normalise here instead of in every caller.
+  if (parsed.NEXT_PUBLIC_APP_URL) {
+    return parsed.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  }
   if (parsed.NODE_ENV === "production") {
     throw new Error(
       "NEXT_PUBLIC_APP_URL is required in production: it builds the links in emails, PDFs and QR codes."
@@ -51,17 +60,12 @@ export function resolveEnv(
   raw: Record<string, string | undefined>,
   { buildPhase = false }: { buildPhase?: boolean } = {}
 ): Env {
-  const parsed = envSchema.safeParse(raw);
+  const parsed = (buildPhase ? buildPhaseSchema : envSchema).safeParse(raw);
 
   if (!parsed.success) {
-    if (buildPhase) return BUILD_PLACEHOLDER;
     console.error("Invalid environment variables:");
     console.error(parsed.error.flatten().fieldErrors);
     throw new Error("Invalid environment variables");
-  }
-
-  if (buildPhase && !parsed.data.NEXT_PUBLIC_APP_URL) {
-    return { ...parsed.data, NEXT_PUBLIC_APP_URL: DEV_APP_URL };
   }
 
   return { ...parsed.data, NEXT_PUBLIC_APP_URL: resolveAppUrl(parsed.data) };

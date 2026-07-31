@@ -56,10 +56,28 @@ describe("resolveEnv", () => {
     );
   });
 
-  it("tolerates the gap only during the production build phase", () => {
-    const env = resolveEnv({ NODE_ENV: "production" }, { buildPhase: true });
+  it("strips a trailing slash so consumers can concatenate safely", () => {
+    const env = resolveEnv({ ...VALID, NEXT_PUBLIC_APP_URL: "https://voisinons.fr/" });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("https://voisinons.fr");
+  });
+
+  it("lets the build phase run without the runtime secrets", () => {
+    const env = resolveEnv(
+      { NODE_ENV: "production", NEXT_PUBLIC_APP_URL: "https://voisinons.fr" },
+      { buildPhase: true }
+    );
 
     expect(env.DATABASE_URL).toBe("");
-    expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
+    expect(env.BLOB_READ_WRITE_TOKEN).toBe("");
+  });
+
+  // NEXT_PUBLIC_APP_URL is baked into the sitemap, robots.txt and metadata at
+  // build time. Defaulting it here would ship localhost links to production
+  // with no runtime check left to catch them.
+  it("still demands the app URL during a production build", () => {
+    expect(() =>
+      resolveEnv({ NODE_ENV: "production" }, { buildPhase: true })
+    ).toThrow(/NEXT_PUBLIC_APP_URL is required in production/);
   });
 });
