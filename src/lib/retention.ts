@@ -2,6 +2,7 @@ import { and, eq, inArray, isNotNull, lt, ne } from "drizzle-orm";
 import { del, list } from "@vercel/blob";
 import { db } from "@/lib/db";
 import { parties } from "@/lib/db/schema";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 /** Announced in /confidentialite. Changing it means changing that page too. */
 export const RETENTION_DAYS = 30;
@@ -132,12 +133,8 @@ export async function deletePartyById(
   partyId: string,
   adminToken: string
 ): Promise<boolean> {
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true, coverImageUrl: true },
-  });
-
-  if (!party || party.adminToken !== adminToken) return false;
+  const party = await requireAdmin({ partyId }, adminToken);
+  if (!party) return false;
 
   await db.delete(parties).where(eq(parties.id, partyId));
 

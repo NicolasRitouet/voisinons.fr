@@ -70,7 +70,10 @@ export const parties = pgTable("parties", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  // The J+30 retention sweep filters on this column every night.
+  index("parties_date_start_idx").on(table.dateStart),
+]);
 
 export const participants = pgTable("participants", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -87,7 +90,7 @@ export const participants = pgTable("participants", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [index("participants_party_id_idx").on(table.partyId)]);
 
 export const needs = pgTable("needs", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -100,7 +103,7 @@ export const needs = pgTable("needs", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [index("needs_party_id_idx").on(table.partyId)]);
 
 export const contributions = pgTable("contributions", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -115,7 +118,10 @@ export const contributions = pgTable("contributions", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  index("contributions_need_id_idx").on(table.needId),
+  index("contributions_participant_id_idx").on(table.participantId),
+]);
 
 export const discussionChannels = pgTable("discussion_channels", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -128,7 +134,7 @@ export const discussionChannels = pgTable("discussion_channels", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [index("discussion_channels_party_id_idx").on(table.partyId)]);
 
 export const adminChecklists = pgTable("admin_checklists", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -138,7 +144,7 @@ export const adminChecklists = pgTable("admin_checklists", {
   itemKey: varchar("item_key", { length: 100 }).notNull(),
   isChecked: boolean("is_checked").notNull().default(false),
   checkedAt: timestamp("checked_at", { withTimezone: true }),
-});
+}, (table) => [index("admin_checklists_party_id_idx").on(table.partyId)]);
 
 export const mairies = pgTable(
   "mairies",
@@ -170,7 +176,11 @@ export const partyUpdates = pgTable("party_updates", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  index("party_updates_party_id_idx").on(table.partyId),
+  // The public page and admin dashboard both read updates newest-first.
+  index("party_updates_party_id_created_at_idx").on(table.partyId, table.createdAt),
+]);
 
 // Relations
 export const partiesRelations = relations(parties, ({ many }) => ({

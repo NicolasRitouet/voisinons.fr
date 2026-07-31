@@ -1,107 +1,65 @@
 import { describe, it, expect } from "vitest";
-import { z } from "zod";
+import { envSchema, resolveEnv } from "./env";
 
-// Test the env schema logic without importing the actual module
-// (which would try to validate real env vars)
+// These exercise the real schema and resolver. A previous version re-declared
+// the schema inside the test, so it could drift from production silently.
 
-describe("env schema validation", () => {
-  const envSchema = z.object({
-    DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
-    RESEND_API_KEY: z.string().optional(),
-    RESEND_FROM_EMAIL: z.string().email().optional(),
-    NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-    BLOB_READ_WRITE_TOKEN: z
-      .string()
-      .min(1, "BLOB_READ_WRITE_TOKEN is required"),
-    NODE_ENV: z
-      .enum(["development", "production", "test"])
-      .default("development"),
-  });
+const VALID = {
+  DATABASE_URL: "postgresql://user:pass@host:5432/db",
+  BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
+};
 
-  it("should accept valid production environment", () => {
-    const env = {
-      DATABASE_URL: "postgresql://user:pass@host:5432/db",
-      RESEND_API_KEY: "re_123456",
-      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
-      NODE_ENV: "production",
-    };
+describe("envSchema", () => {
+  it("accepts a minimal environment and defaults NODE_ENV", () => {
+    const result = envSchema.safeParse(VALID);
 
-    const result = envSchema.safeParse(env);
     expect(result.success).toBe(true);
+    if (result.success) expect(result.data.NODE_ENV).toBe("development");
   });
 
-  it("should accept minimal valid environment", () => {
-    const env = {
-      DATABASE_URL: "postgresql://user:pass@host:5432/db",
-      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
-    };
+  it.each([
+    ["a missing DATABASE_URL", { BLOB_READ_WRITE_TOKEN: "x" }],
+    ["a malformed DATABASE_URL", { ...VALID, DATABASE_URL: "not-a-url" }],
+    ["a missing BLOB_READ_WRITE_TOKEN", { DATABASE_URL: VALID.DATABASE_URL }],
+    ["an unknown NODE_ENV", { ...VALID, NODE_ENV: "staging" }],
+    ["a malformed RESEND_FROM_EMAIL", { ...VALID, RESEND_FROM_EMAIL: "nope" }],
+    ["a malformed NEXT_PUBLIC_APP_URL", { ...VALID, NEXT_PUBLIC_APP_URL: "nope" }],
+  ])("rejects %s", (_label, raw) => {
+    expect(envSchema.safeParse(raw).success).toBe(false);
+  });
+});
 
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.NODE_ENV).toBe("development");
-      expect(result.data.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
-    }
+describe("resolveEnv", () => {
+  it("keeps an explicit app URL", () => {
+    const env = resolveEnv({ ...VALID, NEXT_PUBLIC_APP_URL: "https://voisinons.fr" });
+
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("https://voisinons.fr");
   });
 
-  it("should reject invalid DATABASE_URL", () => {
-    const env = {
-      DATABASE_URL: "not-a-url",
-    };
-
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(false);
+  it("defaults the app URL outside production", () => {
+    expect(resolveEnv(VALID).NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
   });
 
-  it("should reject missing DATABASE_URL", () => {
-    const env = {};
-
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(false);
+  // Silently defaulting here would send localhost links in production emails,
+  // PDF QR codes and the sitemap.
+  it("refuses to guess the app URL in production", () => {
+    expect(() => resolveEnv({ ...VALID, NODE_ENV: "production" })).toThrow(
+      /NEXT_PUBLIC_APP_URL is required in production/
+    );
   });
 
-  it("should reject missing BLOB_READ_WRITE_TOKEN", () => {
-    const env = {
-      DATABASE_URL: "postgresql://user:pass@host:5432/db",
-    };
-
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(false);
+  // The regression this guards: a missing DATABASE_URL used to be swallowed at
+  // runtime, leaving the app pointed at a placeholder database.
+  it("throws at runtime when a required variable is missing", () => {
+    expect(() => resolveEnv({ NODE_ENV: "production" })).toThrow(
+      "Invalid environment variables"
+    );
   });
 
-  it("should reject invalid NODE_ENV", () => {
-    const env = {
-      DATABASE_URL: "postgresql://user:pass@host:5432/db",
-      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
-      NODE_ENV: "staging",
-    };
+  it("tolerates the gap only during the production build phase", () => {
+    const env = resolveEnv({ NODE_ENV: "production" }, { buildPhase: true });
 
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(false);
-  });
-
-  it("should reject invalid RESEND_FROM_EMAIL format", () => {
-    const env = {
-      DATABASE_URL: "postgresql://user:pass@host:5432/db",
-      RESEND_FROM_EMAIL: "not-an-email",
-      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
-    };
-
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(false);
-  });
-
-  it("should accept valid NEXT_PUBLIC_APP_URL", () => {
-    const env = {
-      DATABASE_URL: "postgresql://user:pass@host:5432/db",
-      NEXT_PUBLIC_APP_URL: "https://voisinons.fr",
-      BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test",
-    };
-
-    const result = envSchema.safeParse(env);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.NEXT_PUBLIC_APP_URL).toBe("https://voisinons.fr");
-    }
+    expect(env.DATABASE_URL).toBe("");
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
   });
 });

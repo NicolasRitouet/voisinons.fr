@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { parties } from "@/lib/db/schema";
+import { isAdminToken } from "./require-admin";
 
 const COOKIE_PREFIX = "vp_admin_";
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -55,7 +56,7 @@ export async function authorizeAdminByPartyId(partyId: string): Promise<string |
   if (!party) return null;
 
   const cookieToken = await getAdminTokenFromCookie(party.slug);
-  if (!cookieToken || cookieToken !== party.adminToken) return null;
+  if (!isAdminToken(party.adminToken, cookieToken)) return null;
 
   return party.slug;
 }

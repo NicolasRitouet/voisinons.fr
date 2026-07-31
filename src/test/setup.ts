@@ -39,6 +39,12 @@ function installInMemoryLocalStorage() {
 
 installInMemoryLocalStorage();
 
+// lib/env validates on import and throws when a required variable is missing —
+// deliberately, so a misconfigured runtime fails loudly. Give the suite a valid
+// baseline; tests that care about resolution call resolveEnv() directly.
+process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
+process.env.BLOB_READ_WRITE_TOKEN ??= "vercel_blob_rw_test-token";
+
 // Cleanup after each test
 afterEach(() => {
   cleanup();

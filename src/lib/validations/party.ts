@@ -135,6 +135,18 @@ export const updatePartyDetailsSchema = z
 
 export type UpdatePartyDetailsInput = z.input<typeof updatePartyDetailsSchema>;
 
+export const createPartyUpdateSchema = z.object({
+  partyId: z.string().uuid(),
+  token: z.string().min(10, "Token requis"),
+  content: z
+    .string()
+    .trim()
+    .min(2, "L'actualité doit faire au moins 2 caractères")
+    .max(2000, "L'actualité ne peut pas dépasser 2000 caractères"),
+});
+
+export type CreatePartyUpdateInput = z.infer<typeof createPartyUpdateSchema>;
+
 export const deletePartySchema = z.object({
   partyId: z.string().uuid(),
   token: z.string().min(10, "Token requis"),

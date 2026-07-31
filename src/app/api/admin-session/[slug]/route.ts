@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { parties } from "@/lib/db/schema";
 import {
   clearAdminSessionCookie,
   setAdminSessionCookie,
 } from "@/lib/auth/admin-session";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export const runtime = "nodejs";
 
@@ -39,12 +37,7 @@ export async function GET(
     });
   }
 
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.slug, slug),
-    columns: { adminToken: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!(await requireAdmin({ slug }, token))) {
     return NextResponse.redirect(new URL(`/${slug}`, request.url), {
       status: 303,
     });
@@ -69,12 +62,7 @@ export async function POST(
     return NextResponse.json({ error: "Token requis" }, { status: 400 });
   }
 
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.slug, slug),
-    columns: { adminToken: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!(await requireAdmin({ slug }, token))) {
     return NextResponse.json({ error: "Token invalide" }, { status: 401 });
   }
 

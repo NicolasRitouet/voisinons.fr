@@ -239,13 +239,38 @@ describe("party actions", () => {
   });
 
   describe("createPartyUpdate", () => {
+    const PARTY_UUID = "550e8400-e29b-41d4-a716-446655440000";
+    const OTHER_UUID = "550e8400-e29b-41d4-a716-446655440009";
+
+    it("rejects content past the 2000 character cap before any DB call", async () => {
+      const result = await createPartyUpdate({
+        partyId: PARTY_UUID,
+        token: "correct-token",
+        content: "x".repeat(2001),
+      });
+
+      expect(result.success).toBe(false);
+      expect(db.query.parties.findFirst).not.toHaveBeenCalled();
+    });
+
+    it("rejects a partyId that is not a UUID", async () => {
+      const result = await createPartyUpdate({
+        partyId: "party-123",
+        token: "correct-token",
+        content: "Nouvelle info!",
+      });
+
+      expect(result.success).toBe(false);
+      expect(db.query.parties.findFirst).not.toHaveBeenCalled();
+    });
+
     it("should reject unauthorized access", async () => {
       (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: "party-123",
         adminToken: "correct-token",
       });
 
-      const result = await createPartyUpdate("party-123", "wrong-token", "Update content");
+      const result = await createPartyUpdate({ partyId: PARTY_UUID, token: "wrong-token", content: "Update content" });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Non autorisé");
@@ -254,7 +279,7 @@ describe("party actions", () => {
     it("should reject when party not found", async () => {
       (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
-      const result = await createPartyUpdate("non-existent", "some-token", "Update content");
+      const result = await createPartyUpdate({ partyId: OTHER_UUID, token: "some-token", content: "Update content" });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Non autorisé");
@@ -271,7 +296,7 @@ describe("party actions", () => {
       });
       (db.insert as ReturnType<typeof vi.fn>).mockImplementation(mockInsert);
 
-      const result = await createPartyUpdate("party-123", "correct-token", "Nouvelle info!");
+      const result = await createPartyUpdate({ partyId: PARTY_UUID, token: "correct-token", content: "Nouvelle info!" });
 
       expect(result.success).toBe(true);
     });
@@ -287,7 +312,7 @@ describe("party actions", () => {
       });
       (db.insert as ReturnType<typeof vi.fn>).mockImplementation(mockInsert);
 
-      const result = await createPartyUpdate("party-123", "correct-token", "Content");
+      const result = await createPartyUpdate({ partyId: PARTY_UUID, token: "correct-token", content: "Content" });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Erreur");

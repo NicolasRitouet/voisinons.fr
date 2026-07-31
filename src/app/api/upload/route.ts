@@ -1,10 +1,8 @@
 import { put } from "@vercel/blob";
 import { fileTypeFromBuffer } from "file-type";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { parties } from "@/lib/db/schema";
 import { getAdminTokenFromCookie } from "@/lib/auth/admin-session";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { verifyUploadTicket } from "@/lib/auth/upload-ticket";
 
 export const runtime = "nodejs";
@@ -33,13 +31,7 @@ async function isAuthorized(formData: FormData): Promise<boolean> {
   const slug = formData.get("slug");
   if (typeof slug === "string" && slug.length > 0) {
     const cookieToken = await getAdminTokenFromCookie(slug);
-    if (!cookieToken) return false;
-
-    const party = await db.query.parties.findFirst({
-      where: eq(parties.slug, slug),
-      columns: { adminToken: true },
-    });
-    return party !== undefined && party.adminToken === cookieToken;
+    return (await requireAdmin({ slug }, cookieToken)) !== null;
   }
 
   const ticket = formData.get("ticket");

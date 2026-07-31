@@ -3,11 +3,9 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import QRCode from "qrcode";
-import { db } from "@/lib/db";
-import { parties } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { PartyPoster } from "@/lib/pdf/party-poster";
 import { resolveAdminToken } from "@/lib/auth/admin-session";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { SITE_URL } from "@/lib/site";
 
 export async function GET(
@@ -25,15 +23,9 @@ export async function GET(
   }
 
   // Fetch party and verify admin token
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.slug, slug),
-  });
+  const party = await requireAdmin({ slug }, token);
 
   if (!party) {
-    return NextResponse.json({ error: "Fête non trouvée" }, { status: 404 });
-  }
-
-  if (party.adminToken !== token) {
     return NextResponse.json({ error: "Token invalide" }, { status: 403 });
   }
 
