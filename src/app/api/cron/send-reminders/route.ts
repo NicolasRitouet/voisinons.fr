@@ -1,52 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, gte, inArray, lte, sql } from "drizzle-orm";
-import { differenceInDays } from "date-fns";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { addDays } from "date-fns";
 import { db } from "@/lib/db";
 import { parties, participants } from "@/lib/db/schema";
 import { sendOrganizerReminderEmail } from "@/lib/email";
+import { isCronRequestAuthorized } from "@/lib/auth/cron";
+import {
+  REMINDER_WINDOW_MAX_DAYS,
+  REMINDER_WINDOW_MIN_DAYS,
+  selectReminders,
+} from "@/lib/reminders";
 
 const EMAIL_CONCURRENCY = 10;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-// Adaptive reminder windows. The cron runs daily; a party is eligible if
-// it falls into one of these buckets and has no reminder sent in the last
-// `cooldownDays` (so a party that hits J-14 then J-7 still gets two mails).
-const REMINDER_BUCKETS = [
-  { name: "J-14" as const, minDays: 12, maxDays: 15, cooldownDays: 5 },
-  { name: "J-7" as const, minDays: 5, maxDays: 8, cooldownDays: 5 },
-  { name: "J-3" as const, minDays: 2, maxDays: 4, cooldownDays: 2 },
-];
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
-  // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`. In dev we accept
-  // the same header so the route stays callable manually for testing.
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 500 }
-    );
-  }
-
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isCronRequestAuthorized(request.headers.get("authorization"))) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   const startedAt = Date.now();
   const sent: Array<{ slug: string; bucket: string; days: number }> = [];
-  const skipped: Array<{ slug: string; reason: string }> = [];
   const errors: Array<{ slug: string; error: string }> = [];
 
   try {
+    // One clock for the whole run. Filtering on the database's now() while
+    // bucketing on the app's would let clock skew move a party across a window
+    // boundary mid-decision.
     const now = new Date();
 
-    // The party_id → participant count subquery. Counts the organiser too.
-    // We only nudge organisers whose fête is "underbooked" (≤ 2 participants
-    // including themselves, i.e. 0 or 1 voisin signed up).
-    const eligibleParties = await db
+    const candidates = await db
       .select({
         id: parties.id,
         slug: parties.slug,
@@ -56,6 +42,7 @@ export async function GET(request: NextRequest) {
         adminToken: parties.adminToken,
         dateStart: parties.dateStart,
         lastReminderAt: parties.lastReminderAt,
+        reminderOptOut: parties.reminderOptOut,
         participantCount: sql<number>`(
           SELECT count(*)::int FROM ${participants}
           WHERE ${participants.partyId} = ${parties.id}
@@ -64,53 +51,16 @@ export async function GET(request: NextRequest) {
       .from(parties)
       .where(
         and(
-          // dateStart between J-15 and J-2 inclusive (widest window, narrower
-          // bucket logic happens below per-row)
-          gte(parties.dateStart, sql`now() + interval '2 days'`),
-          lte(parties.dateStart, sql`now() + interval '15 days'`)
+          eq(parties.reminderOptOut, false),
+          gte(parties.dateStart, addDays(now, REMINDER_WINDOW_MIN_DAYS)),
+          lte(parties.dateStart, addDays(now, REMINDER_WINDOW_MAX_DAYS))
         )
       );
 
-    type Eligible = (typeof eligibleParties)[number];
-    const toSend: Array<{ party: Eligible; bucket: typeof REMINDER_BUCKETS[number]; daysUntilParty: number }> = [];
+    const { due, skipped } = selectReminders(candidates, now);
 
-    for (const party of eligibleParties) {
-      const daysUntilParty = differenceInDays(party.dateStart, now);
-
-      const bucket = REMINDER_BUCKETS.find(
-        (b) => daysUntilParty >= b.minDays && daysUntilParty <= b.maxDays
-      );
-
-      if (!bucket) {
-        skipped.push({ slug: party.slug, reason: `outside-bucket (J-${daysUntilParty})` });
-        continue;
-      }
-
-      if (Number(party.participantCount) > 2) {
-        skipped.push({ slug: party.slug, reason: "already-engaged" });
-        continue;
-      }
-
-      if (party.lastReminderAt) {
-        const daysSinceReminder = differenceInDays(now, party.lastReminderAt);
-        if (daysSinceReminder < bucket.cooldownDays) {
-          skipped.push({
-            slug: party.slug,
-            reason: `cooldown (${bucket.cooldownDays}d, last sent ${daysSinceReminder}d ago)`,
-          });
-          continue;
-        }
-      }
-
-      toSend.push({ party, bucket, daysUntilParty });
-    }
-
-    // Send in bounded-concurrency chunks so 50 mail sends don't serialise to
-    // 25s+ (each Resend call is ~500ms). EMAIL_CONCURRENCY caps in-flight
-    // requests to stay friendly to Resend rate limits.
-    const sentIds: string[] = [];
-    for (let i = 0; i < toSend.length; i += EMAIL_CONCURRENCY) {
-      const chunk = toSend.slice(i, i + EMAIL_CONCURRENCY);
+    for (let i = 0; i < due.length; i += EMAIL_CONCURRENCY) {
+      const chunk = due.slice(i, i + EMAIL_CONCURRENCY);
       const results = await Promise.allSettled(
         chunk.map(({ party, daysUntilParty }) =>
           sendOrganizerReminderEmail({
@@ -121,49 +71,63 @@ export async function GET(request: NextRequest) {
             adminToken: party.adminToken,
             partyDate: party.dateStart,
             daysUntilParty,
-            participantsCount: Number(party.participantCount),
+            participantsCount: party.participantCount,
           })
         )
       );
 
-      results.forEach((r, idx) => {
-        const { party, bucket, daysUntilParty } = chunk[idx];
-        if (r.status === "rejected") {
-          errors.push({ slug: party.slug, error: String(r.reason) });
+      const chunkSentIds: string[] = [];
+      results.forEach((result, index) => {
+        const { party, bucket, daysUntilParty } = chunk[index];
+        if (result.status === "rejected") {
+          errors.push({ slug: party.slug, error: String(result.reason) });
           return;
         }
-        if (!r.value.success) {
-          errors.push({ slug: party.slug, error: r.value.error ?? "unknown" });
+        if (!result.value.success) {
+          errors.push({
+            slug: party.slug,
+            error: result.value.error ?? "unknown",
+          });
           return;
         }
-        sentIds.push(party.id);
-        sent.push({ slug: party.slug, bucket: bucket.name, days: daysUntilParty });
+        chunkSentIds.push(party.id);
+        sent.push({
+          slug: party.slug,
+          bucket: bucket.name,
+          days: daysUntilParty,
+        });
       });
+
+      // Persist per chunk rather than once at the end: a crash or timeout
+      // between the sends and a single trailing UPDATE would re-mail every
+      // organizer on the next run.
+      if (chunkSentIds.length > 0) {
+        await db
+          .update(parties)
+          .set({ lastReminderAt: now })
+          .where(inArray(parties.id, chunkSentIds));
+      }
     }
 
-    if (sentIds.length > 0) {
-      await db
-        .update(parties)
-        .set({ lastReminderAt: now })
-        .where(inArray(parties.id, sentIds));
-    }
+    const report = {
+      elapsedMs: Date.now() - startedAt,
+      candidates: candidates.length,
+      sent: sent.length,
+      skipped: skipped.length,
+      errors: errors.length,
+    };
+    console.info("[cron/send-reminders]", report);
 
     return NextResponse.json(
-      {
-        ok: true,
-        elapsedMs: Date.now() - startedAt,
-        eligible: eligibleParties.length,
-        sent,
-        skipped,
-        errors,
-      },
+      { ok: true, ...report, sentDetail: sent, errorDetail: errors },
       { headers: { "Cache-Control": "no-store" } }
     );
-  } catch (err) {
-    console.error("[cron/send-reminders] failure:", err);
+  } catch (error) {
+    // Log the cause server-side; the response stays opaque, like /api/health.
+    console.error("[cron/send-reminders] failure:", error);
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : String(err) },
-      { status: 500 }
+      { ok: false, error: "Erreur lors de l'envoi des relances" },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }

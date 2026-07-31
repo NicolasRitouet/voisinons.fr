@@ -65,6 +65,7 @@ export const parties = pgTable("parties", {
     .default(false),
   adminToken: varchar("admin_token", { length: 64 }).notNull(),
   lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
+  reminderOptOut: boolean("reminder_opt_out").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

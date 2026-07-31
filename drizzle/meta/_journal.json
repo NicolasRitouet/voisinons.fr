@@ -36,6 +36,13 @@
       "when": 1785508870543,
       "tag": "0004_fk_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785511228806,
+      "tag": "0005_parties_reminder_fields",
+      "breakpoints": true
     }
   ]
 }

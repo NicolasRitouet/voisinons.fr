@@ -339,6 +339,7 @@ export async function sendOrganizerReminderEmail(
   const publicUrl = `${SITE_URL}/${data.partySlug}`;
   const adminUrl = `${SITE_URL}/${data.partySlug}/admin?token=${data.adminToken}`;
   const posterUrl = `${SITE_URL}/api/party/${data.partySlug}/poster?token=${data.adminToken}`;
+  const unsubscribeUrl = `${SITE_URL}/api/reminders/unsubscribe/${data.partySlug}?token=${data.adminToken}`;
 
   const fromEmail =
     process.env.RESEND_FROM_EMAIL || "Voisinons.fr <noreply@mail.voisinons.fr>";
@@ -381,7 +382,9 @@ export async function sendOrganizerReminderEmail(
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   const mailtoUrl = `mailto:?subject=${encodeURIComponent(`Fête des voisins le ${formattedDate}`)}&body=${encodeURIComponent(shareText)}`;
 
-  const otherParticipants = data.participantsCount - 1;
+  // The organizer's own participant row can be missing (they may have
+  // withdrawn), so clamp instead of trusting count - 1.
+  const otherParticipants = Math.max(0, data.participantsCount - 1);
   const participantSummary =
     otherParticipants <= 0
       ? `<p style="color: #666; margin: 0;">Pour l'instant, vous êtes le seul inscrit.</p>`
@@ -441,7 +444,8 @@ export async function sendOrganizerReminderEmail(
   </p>
 
   <p style="color: #999; font-size: 12px; text-align: center;">
-    Vous recevez ce rappel parce que vous avez créé une fête sur voisinons.fr.
+    Vous recevez ce rappel parce que vous avez créé une fête sur voisinons.fr.<br>
+    <a href="${unsubscribeUrl}" style="color: #999;">Ne plus recevoir de rappel pour cette fête</a>
   </p>
 </body>
 </html>
