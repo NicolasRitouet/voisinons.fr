@@ -15,6 +15,8 @@ import {
   type JoinPartyInput,
   type UpdateParticipantInput,
   type AdminUpdateOrganizerInput,
+  deleteParticipantSchema,
+  type DeleteParticipantInput,
 } from "@/lib/validations/participant";
 
 export async function joinParty(data: JoinPartyInput) {
@@ -110,6 +112,35 @@ export async function getParticipantByToken(editToken: string) {
   } catch (error) {
     console.error("Failed to get participant by token:", error);
     return null;
+  }
+}
+
+// RGPD right to erasure for a participant. Like updateParticipant, the
+// editToken is the only credential that proves ownership of the RSVP.
+export async function deleteParticipant(data: DeleteParticipantInput) {
+  const validated = deleteParticipantSchema.safeParse(data);
+
+  if (!validated.success) {
+    return { success: false as const, error: "Données invalides" };
+  }
+
+  try {
+    const [deleted] = await db
+      .delete(participants)
+      .where(eq(participants.editToken, validated.data.editToken))
+      .returning({ id: participants.id });
+
+    if (!deleted) {
+      return { success: false as const, error: "Participant non trouvé" };
+    }
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to delete participant:", error);
+    return {
+      success: false as const,
+      error: "Une erreur est survenue lors de la suppression",
+    };
   }
 }
 

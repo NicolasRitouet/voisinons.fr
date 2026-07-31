@@ -7,9 +7,12 @@ import { sendPartyCreatedEmail } from "@/lib/email";
 import {
   createPartySchema,
   updatePartyDetailsSchema,
+  deletePartySchema,
   type CreatePartyInput,
   type UpdatePartyDetailsInput,
+  type DeletePartyInput,
 } from "@/lib/validations/party";
+import { deletePartyById } from "@/lib/retention";
 import {
   createChannelSchema,
   updateChannelSchema,
@@ -330,6 +333,33 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
     return {
       success: false as const,
       error: { _form: ["Une erreur est survenue lors de la mise à jour"] },
+    };
+  }
+}
+
+export async function deleteParty(data: DeletePartyInput) {
+  const validated = deletePartySchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: { _form: ["Requête invalide"] },
+    };
+  }
+
+  const { partyId, token } = validated.data;
+
+  try {
+    const deleted = await deletePartyById(partyId, token);
+    if (!deleted) {
+      return { success: false as const, error: { _form: ["Non autorisé"] } };
+    }
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to delete party:", error);
+    return {
+      success: false as const,
+      error: { _form: ["Une erreur est survenue lors de la suppression"] },
     };
   }
 }

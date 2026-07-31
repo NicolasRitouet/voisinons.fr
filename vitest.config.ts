@@ -8,6 +8,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // Restores vi.spyOn spies between tests. Note it does NOT reach mocks
+    // created inside vi.mock() factories — those need an explicit mockReset()
+    // in beforeEach (see actions/party.test.ts).
+    restoreMocks: true,
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     coverage: {
       provider: "v8",

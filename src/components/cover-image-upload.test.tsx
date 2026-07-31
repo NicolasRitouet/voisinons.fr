@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, fireEvent, waitFor } from "@testing-library/react";
+
+vi.mock("@/lib/actions/upload", () => ({
+  createUploadTicket: vi.fn().mockResolvedValue("9999999999999.deadbeef"),
+}));
+
 import { CoverImageUpload } from "./cover-image-upload";
 
 const TOO_LARGE_MESSAGE =
@@ -199,5 +204,56 @@ describe("CoverImageUpload", () => {
       expect(onError).toHaveBeenCalledWith("Erreur d'upload")
     );
     expect(onUploaded).not.toHaveBeenCalled();
+  });
+
+  describe("credentials sent to /api/upload", () => {
+    function stubOkFetch() {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ url: "https://blob.example/cover.jpg" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      return fetchMock;
+    }
+
+    async function uploadedBody(fetchMock: ReturnType<typeof vi.fn>) {
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      return fetchMock.mock.calls[0][1].body as FormData;
+    }
+
+    it("sends a signed ticket when creating a party (no slug yet)", async () => {
+      const fetchMock = stubOkFetch();
+      const { container } = render(
+        <CoverImageUpload onUploaded={vi.fn()} onError={vi.fn()} />
+      );
+
+      fireEvent.change(getFileInput(container), {
+        target: { files: [makeFile(1024)] },
+      });
+
+      const body = await uploadedBody(fetchMock);
+      expect(body.get("ticket")).toBe("9999999999999.deadbeef");
+      expect(body.get("slug")).toBeNull();
+    });
+
+    it("sends the slug when editing, so the admin cookie authorizes it", async () => {
+      const fetchMock = stubOkFetch();
+      const { container } = render(
+        <CoverImageUpload
+          partySlug="rue-jaboulay-lyon"
+          onUploaded={vi.fn()}
+          onError={vi.fn()}
+        />
+      );
+
+      fireEvent.change(getFileInput(container), {
+        target: { files: [makeFile(1024)] },
+      });
+
+      const body = await uploadedBody(fetchMock);
+      expect(body.get("slug")).toBe("rue-jaboulay-lyon");
+      expect(body.get("ticket")).toBeNull();
+    });
   });
 });

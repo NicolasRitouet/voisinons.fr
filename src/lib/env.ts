@@ -16,6 +16,10 @@ const envSchema = z.object({
     .string()
     .min(1, "BLOB_READ_WRITE_TOKEN is required"),
 
+  // Optional - shared secret for the Vercel cron that runs the J+30 purge.
+  // Absent means the purge endpoint refuses every caller.
+  CRON_SECRET: z.string().optional(),
+
   // System
   NODE_ENV: z
     .enum(["development", "production", "test"])

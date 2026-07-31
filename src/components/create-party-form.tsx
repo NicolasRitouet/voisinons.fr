@@ -39,6 +39,7 @@ import {
   generatePartyNameFromAddress,
 } from "@/lib/validations/party";
 import { createParty, checkSlugAvailability } from "@/lib/actions/party";
+import { getDefaultPartyDate } from "@/lib/fete-des-voisins";
 import { saveAdminParty } from "@/lib/storage/admin-parties";
 
 import { CoverImageUpload } from "@/components/cover-image-upload";
@@ -63,7 +64,7 @@ export function CreatePartyForm() {
       slug: "",
       placeType: "rue",
       address: "",
-      date: new Date(2026, 4, 29).toISOString(), // 29 mai 2026 (Fête des voisins)
+      date: getDefaultPartyDate().toISOString(),
       timeStart: "14:00",
       timeEnd: "",
       description: "",

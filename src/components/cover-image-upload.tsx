@@ -2,16 +2,19 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { createUploadTicket } from "@/lib/actions/upload";
 
 interface Props {
   onUploaded: (url: string) => void;
   onError: (msg: string) => void;
+  /** Set when editing an existing party: authorizes via the admin cookie. */
+  partySlug?: string;
 }
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const TOO_LARGE_MESSAGE = "Image trop volumineuse (4 Mo max). Pensez à la compresser avant de la téléverser.";
 
-export function CoverImageUpload({ onUploaded, onError }: Props) {
+export function CoverImageUpload({ onUploaded, onError, partySlug }: Props) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +32,11 @@ export function CoverImageUpload({ onUploaded, onError }: Props) {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (partySlug) {
+        formData.append("slug", partySlug);
+      } else {
+        formData.append("ticket", await createUploadTicket());
+      }
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,

@@ -142,7 +142,7 @@ export default function ConfidentialitePage() {
             <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
               <li><strong>Droit d&apos;accès :</strong> obtenir une copie de vos données</li>
               <li><strong>Droit de rectification :</strong> corriger vos données inexactes</li>
-              <li><strong>Droit à l&apos;effacement :</strong> demander la suppression de vos données</li>
+              <li><strong>Droit à l&apos;effacement :</strong> supprimer vos données à tout moment, sans nous écrire — un participant depuis le lien de modification reçu par email, un organisateur depuis la page d&apos;administration de sa fête</li>
               <li><strong>Droit à la limitation :</strong> limiter le traitement de vos données</li>
               <li><strong>Droit à la portabilité :</strong> récupérer vos données dans un format structuré</li>
               <li><strong>Droit d&apos;opposition :</strong> vous opposer au traitement de vos données</li>
