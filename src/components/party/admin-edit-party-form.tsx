@@ -29,6 +29,7 @@ import { updatePartyDetails } from "@/lib/actions/party";
 
 interface AdminEditPartyFormProps {
   partyId: string;
+  partySlug: string;
   token: string;
   defaultDate: string;
   defaultTimeStart: string;
@@ -42,6 +43,7 @@ interface AdminEditPartyFormProps {
 
 export function AdminEditPartyForm({
   partyId,
+  partySlug,
   token,
   defaultDate,
   defaultTimeStart,
@@ -281,6 +283,7 @@ export function AdminEditPartyForm({
 
                       <div className="flex flex-wrap items-center gap-3">
                         <CoverImageUpload
+                          partySlug={partySlug}
                           onUploaded={(url) => {
                             field.onChange(url);
                             setUploadError(null);

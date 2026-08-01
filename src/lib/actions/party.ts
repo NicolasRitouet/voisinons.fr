@@ -1,15 +1,21 @@
 "use server";
 
 import { cache } from "react";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { parties, participants, partyUpdates, discussionChannels, needs } from "@/lib/db/schema";
 import { sendPartyCreatedEmail } from "@/lib/email";
 import {
   createPartySchema,
   updatePartyDetailsSchema,
+  createPartyUpdateSchema,
+  deletePartySchema,
   type CreatePartyInput,
   type UpdatePartyDetailsInput,
+  type CreatePartyUpdateInput,
+  type DeletePartyInput,
 } from "@/lib/validations/party";
+import { deletePartyById } from "@/lib/retention";
 import {
   createChannelSchema,
   updateChannelSchema,
@@ -23,6 +29,7 @@ import { del } from "@vercel/blob";
 import { generateToken } from "@/lib/crypto";
 import { defaultNeedCategories } from "@/lib/needs";
 import { setAdminSessionCookie } from "@/lib/auth/admin-session";
+import { isAdminToken, requireAdmin } from "@/lib/auth/require-admin";
 import {
   publicPartyColumns,
   publicParticipantColumns,
@@ -206,21 +213,26 @@ export async function getPartyForAdmin(slug: string, token: string) {
     },
   });
 
-  if (!party || party.adminToken !== token) {
+  if (!party || !isAdminToken(party.adminToken, token)) {
     return null;
   }
 
   return party;
 }
 
-export async function createPartyUpdate(partyId: string, token: string, content: string) {
-  // Verify admin token - only fetch needed columns
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true },
-  });
+export async function createPartyUpdate(data: CreatePartyUpdateInput) {
+  const validated = createPartyUpdateSchema.safeParse(data);
 
-  if (!party || party.adminToken !== token) {
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.issues[0]?.message || "Données invalides",
+    };
+  }
+
+  const { partyId, token, content } = validated.data;
+
+  if (!(await requireAdmin({ partyId }, token))) {
     return { success: false as const, error: "Non autorisé" };
   }
 
@@ -260,14 +272,8 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
     notifyOnNewParticipant,
   } = validated.data;
 
-  // Fetch columns needed for auth validation + the previous cover image
-  // so we can clean up the old blob if it gets replaced.
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true, coverImageUrl: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  const party = await requireAdmin({ partyId }, token);
+  if (!party) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 
@@ -334,6 +340,38 @@ export async function updatePartyDetails(data: UpdatePartyDetailsInput) {
   }
 }
 
+export async function deleteParty(data: DeletePartyInput) {
+  const validated = deletePartySchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: { _form: ["Requête invalide"] },
+    };
+  }
+
+  const { partyId, token } = validated.data;
+
+  try {
+    const result = await deletePartyById(partyId, token);
+    if (!result) {
+      return { success: false as const, error: { _form: ["Non autorisé"] } };
+    }
+
+    // The public page is force-dynamic but still served from the router cache
+    // on client navigations; without this it keeps showing a deleted party.
+    revalidatePath(`/${result.slug}`);
+    revalidatePath(`/${result.slug}/participer`);
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to delete party:", error);
+    return {
+      success: false as const,
+      error: { _form: ["Une erreur est survenue lors de la suppression"] },
+    };
+  }
+}
+
 export async function createDiscussionChannel(data: CreateChannelInput) {
   const validated = createChannelSchema.safeParse(data);
 
@@ -346,13 +384,7 @@ export async function createDiscussionChannel(data: CreateChannelInput) {
 
   const { partyId, token, type, name, url } = validated.data;
 
-  // Only fetch columns needed for auth validation
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!(await requireAdmin({ partyId }, token))) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 
@@ -398,7 +430,7 @@ export async function updateDiscussionChannel(data: UpdateChannelInput) {
     return { success: false as const, error: { _form: ["Canal introuvable"] } };
   }
 
-  if (!channel.party || channel.party.adminToken !== token) {
+  if (!isAdminToken(channel.party?.adminToken, token)) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 
@@ -446,7 +478,7 @@ export async function deleteDiscussionChannel(data: DeleteChannelInput) {
     return { success: false as const, error: { _form: ["Canal introuvable"] } };
   }
 
-  if (!channel.party || channel.party.adminToken !== token) {
+  if (!isAdminToken(channel.party?.adminToken, token)) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 

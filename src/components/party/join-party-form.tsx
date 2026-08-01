@@ -26,6 +26,7 @@ import {
   joinParty,
   getParticipantByToken,
   updateParticipant,
+  deleteParticipant,
 } from "@/lib/actions/participant";
 import {
   getParticipantId,
@@ -54,6 +55,7 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
   const [isLoading, setIsLoading] = useState(true);
   const [participantTokenState, setParticipantTokenState] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [confirmingWithdrawal, setConfirmingWithdrawal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -133,6 +135,26 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
 
     checkExistingRegistration();
   }, [partyId, partySlug]);
+
+  const handleWithdraw = () => {
+    if (!participantTokenState) return;
+    setError(null);
+    setSuccessMessage(null);
+
+    startTransition(async () => {
+      const result = await deleteParticipant({
+        editToken: participantTokenState,
+      });
+
+      if (result.success) {
+        removeParticipantToken(partySlug);
+        router.push(`/${partySlug}`);
+      } else {
+        setError(result.error || "Une erreur est survenue");
+        setConfirmingWithdrawal(false);
+      }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,6 +366,45 @@ export function JoinPartyForm({ partyId, partySlug, needs }: JoinPartyFormProps)
                   : "M'inscrire"}
             </Button>
           </div>
+
+          {isEditMode && participantTokenState && (
+            <div className="border-t pt-4">
+              {confirmingWithdrawal ? (
+                <div className="space-y-3 rounded-lg bg-red-50 p-3">
+                  <p className="text-sm text-red-900">
+                    Votre inscription et vos coordonnées seront définitivement
+                    effacées.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      onClick={handleWithdraw}
+                      disabled={isPending}
+                      className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                      {isPending ? "Suppression…" : "Confirmer"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setConfirmingWithdrawal(false)}
+                      disabled={isPending}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingWithdrawal(true)}
+                  className="text-sm text-gray-500 underline hover:text-red-700"
+                >
+                  Annuler ma participation et effacer mes données
+                </button>
+              )}
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>

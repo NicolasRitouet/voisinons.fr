@@ -50,3 +50,11 @@ playwright/.cache/
 
 # SEO exports (GSC, etc.)
 /seo
+
+# Beads issue tracker — local only, never published
+.beads/
+/AGENTS.md
+/CLAUDE.md
+.dolt/
+*.db
+.beads-credential-key

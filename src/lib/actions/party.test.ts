@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { addDays } from "date-fns";
 
 // Mock the database module
 vi.mock("@/lib/db", () => ({
@@ -49,17 +50,33 @@ import {
 } from "./party-public-columns";
 import { parties, participants } from "@/lib/db/schema";
 
-// Party dates must be today or in the future — createPartySchema and
-// updatePartyDetailsSchema reject past dates. Compute the date dynamically
-// (30 days out) so these tests never become time-bombs that start failing
-// once a hardcoded date slips into the past.
-const FUTURE_DATE = new Date(
-  Date.now() + 30 * 24 * 60 * 60 * 1000
-).toISOString();
+// The payloads below carry real 2026 dates and createPartySchema rejects
+// anything in the past. Freeze the clock so they stay valid for good.
+const NOW = new Date(2026, 0, 15);
+
+// Kept from #8 for the payloads that still reference it, but anchored on the
+// frozen clock above rather than the wall clock.
+const FUTURE_DATE = addDays(NOW, 30).toISOString();
 
 describe("party actions", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+
+    // clearAllMocks() keeps both queued mock*Once values and persistent
+    // mockResolvedValue implementations, so a test that returns early feeds
+    // the next one. Reset the db surface outright — verified with
+    // `vitest run --sequence.shuffle`.
     vi.clearAllMocks();
+    vi.mocked(db.query.parties.findFirst).mockReset();
+    vi.mocked(db.query.discussionChannels.findFirst).mockReset();
+    vi.mocked(db.transaction).mockReset();
+    vi.mocked(db.insert).mockReset();
+    vi.mocked(db.update).mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe("createParty", () => {
@@ -109,20 +126,25 @@ describe("party actions", () => {
       expect(result.success).toBe(false);
     });
 
-    it("should reject invalid time format", async () => {
-      const result = await createParty({
-        name: "Fête de la rue",
-        slug: "fete-rue",
-        placeType: "rue",
-        address: "12 rue de la Paix, Paris",
-        date: new Date().toISOString(),
-        timeStart: "25:00",
-        organizerName: "Jean Dupont",
-        organizerEmail: "jean@example.com",
-      });
+    it.each(["25:00", "12:99", "9:30", "1400"])(
+      "should reject out-of-range time %s at validation, before any DB call",
+      async (timeStart) => {
+        const result = await createParty({
+          name: "Fête de la rue",
+          slug: "fete-rue",
+          placeType: "rue",
+          address: "12 rue de la Paix, Paris",
+          date: new Date().toISOString(),
+          timeStart,
+          organizerName: "Jean Dupont",
+          organizerEmail: "jean@example.com",
+        });
 
-      expect(result.success).toBe(false);
-    });
+        expect(result.success).toBe(false);
+        expect((result.error as { timeStart?: string[] })?.timeStart).toBeDefined();
+        expect(db.query.parties.findFirst).not.toHaveBeenCalled();
+      }
+    );
 
     it("should create party with valid data", async () => {
       const mockParty = {
@@ -217,13 +239,38 @@ describe("party actions", () => {
   });
 
   describe("createPartyUpdate", () => {
+    const PARTY_UUID = "550e8400-e29b-41d4-a716-446655440000";
+    const OTHER_UUID = "550e8400-e29b-41d4-a716-446655440009";
+
+    it("rejects content past the 2000 character cap before any DB call", async () => {
+      const result = await createPartyUpdate({
+        partyId: PARTY_UUID,
+        token: "correct-token",
+        content: "x".repeat(2001),
+      });
+
+      expect(result.success).toBe(false);
+      expect(db.query.parties.findFirst).not.toHaveBeenCalled();
+    });
+
+    it("rejects a partyId that is not a UUID", async () => {
+      const result = await createPartyUpdate({
+        partyId: "party-123",
+        token: "correct-token",
+        content: "Nouvelle info!",
+      });
+
+      expect(result.success).toBe(false);
+      expect(db.query.parties.findFirst).not.toHaveBeenCalled();
+    });
+
     it("should reject unauthorized access", async () => {
       (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
         id: "party-123",
         adminToken: "correct-token",
       });
 
-      const result = await createPartyUpdate("party-123", "wrong-token", "Update content");
+      const result = await createPartyUpdate({ partyId: PARTY_UUID, token: "wrong-token", content: "Update content" });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Non autorisé");
@@ -232,7 +279,7 @@ describe("party actions", () => {
     it("should reject when party not found", async () => {
       (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
-      const result = await createPartyUpdate("non-existent", "some-token", "Update content");
+      const result = await createPartyUpdate({ partyId: OTHER_UUID, token: "some-token", content: "Update content" });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Non autorisé");
@@ -249,7 +296,7 @@ describe("party actions", () => {
       });
       (db.insert as ReturnType<typeof vi.fn>).mockImplementation(mockInsert);
 
-      const result = await createPartyUpdate("party-123", "correct-token", "Nouvelle info!");
+      const result = await createPartyUpdate({ partyId: PARTY_UUID, token: "correct-token", content: "Nouvelle info!" });
 
       expect(result.success).toBe(true);
     });
@@ -265,7 +312,7 @@ describe("party actions", () => {
       });
       (db.insert as ReturnType<typeof vi.fn>).mockImplementation(mockInsert);
 
-      const result = await createPartyUpdate("party-123", "correct-token", "Content");
+      const result = await createPartyUpdate({ partyId: PARTY_UUID, token: "correct-token", content: "Content" });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Erreur");

@@ -17,6 +17,8 @@ import { AdminChannelForm } from "@/components/party/admin-channel-form";
 import { AdminChannelList } from "@/components/party/admin-channel-list";
 import { AdminNeeds } from "@/components/party/admin-needs";
 import { AdminOrganizerEdit } from "@/components/party/admin-organizer-edit";
+import { AdminDeletePartyForm } from "@/components/party/admin-delete-party";
+import { RETENTION_DAYS } from "@/lib/retention";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -156,6 +158,7 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                 </Button>
                 <AdminEditPartyForm
                   partyId={party.id}
+                  partySlug={party.slug}
                   token={token}
                   defaultDate={new Date(party.dateStart).toISOString()}
                   defaultTimeStart={timeStart}
@@ -389,6 +392,28 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
               )}
             </AdminTabPanel>
           </AdminTabs>
+        </section>
+
+        <section>
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="font-[family-name:var(--font-space-grotesk)] text-red-900">
+                Supprimer la fête
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Les données de cette fête sont de toute façon effacées
+                automatiquement {RETENTION_DAYS} jours après l&apos;événement.
+                Vous pouvez aussi tout supprimer dès maintenant.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AdminDeletePartyForm
+                partyId={party.id}
+                partyName={party.name}
+                token={token}
+              />
+            </CardContent>
+          </Card>
         </section>
       </div>
     </main>

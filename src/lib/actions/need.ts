@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { needs, parties } from "@/lib/db/schema";
+import { needs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import {
   createNeedSchema,
@@ -9,6 +9,7 @@ import {
   type CreateNeedInput,
   type DeleteNeedInput,
 } from "@/lib/validations/need";
+import { isAdminToken, requireAdmin } from "@/lib/auth/require-admin";
 
 export async function createNeedCategory(data: CreateNeedInput) {
   const validated = createNeedSchema.safeParse(data);
@@ -22,13 +23,7 @@ export async function createNeedCategory(data: CreateNeedInput) {
 
   const { partyId, token, category, description } = validated.data;
 
-  // Validate token inline - only fetch if token matches
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!(await requireAdmin({ partyId }, token))) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 
@@ -73,7 +68,7 @@ export async function deleteNeedCategory(data: DeleteNeedInput) {
     return { success: false as const, error: { _form: ["Catégorie introuvable"] } };
   }
 
-  if (!need.party || need.party.adminToken !== token) {
+  if (!isAdminToken(need.party?.adminToken, token)) {
     return { success: false as const, error: { _form: ["Non autorisé"] } };
   }
 

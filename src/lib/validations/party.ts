@@ -23,6 +23,17 @@ const notifyOnNewParticipantField = z
   .optional()
   .default(false);
 
+// \d{2}:\d{2} alone accepts 25:00 and 12:99, which then silently roll over
+// into the next day via Date.setHours().
+const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const timeStartField = z.string().regex(TIME_HHMM, "Format HH:MM requis");
+const timeEndField = z
+  .string()
+  .regex(TIME_HHMM, "Format HH:MM requis")
+  .optional()
+  .or(z.literal(""));
+
 export const createPartySchema = z
   .object({
     name: z
@@ -50,14 +61,8 @@ export const createPartySchema = z
       today.setHours(0, 0, 0, 0);
       return !isNaN(date.getTime()) && date >= today;
     }, "La date doit être aujourd'hui ou dans le futur"),
-    timeStart: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis"),
-    timeEnd: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis")
-      .optional()
-      .or(z.literal("")),
+    timeStart: timeStartField,
+    timeEnd: timeEndField,
     description: z
       .string()
       .max(5000, "La description ne peut pas dépasser 5000 caractères")
@@ -112,14 +117,8 @@ export const updatePartyDetailsSchema = z
       today.setHours(0, 0, 0, 0);
       return !isNaN(date.getTime()) && date >= today;
     }, "La date doit être aujourd'hui ou dans le futur"),
-    timeStart: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis"),
-    timeEnd: z
-      .string()
-      .regex(/^\d{2}:\d{2}$/, "Format HH:MM requis")
-      .optional()
-      .or(z.literal("")),
+    timeStart: timeStartField,
+    timeEnd: timeEndField,
     notifyOnNewParticipant: notifyOnNewParticipantField,
   })
   .superRefine((data, ctx) => {
@@ -135,6 +134,25 @@ export const updatePartyDetailsSchema = z
   });
 
 export type UpdatePartyDetailsInput = z.input<typeof updatePartyDetailsSchema>;
+
+export const createPartyUpdateSchema = z.object({
+  partyId: z.string().uuid(),
+  token: z.string().min(10, "Token requis"),
+  content: z
+    .string()
+    .trim()
+    .min(2, "L'actualité doit faire au moins 2 caractères")
+    .max(2000, "L'actualité ne peut pas dépasser 2000 caractères"),
+});
+
+export type CreatePartyUpdateInput = z.infer<typeof createPartyUpdateSchema>;
+
+export const deletePartySchema = z.object({
+  partyId: z.string().uuid(),
+  token: z.string().min(10, "Token requis"),
+});
+
+export type DeletePartyInput = z.infer<typeof deletePartySchema>;
 
 /**
  * Parse une adresse française et extrait la rue et la ville

@@ -28,7 +28,7 @@ export function PostUpdateForm({ partyId, token }: PostUpdateFormProps) {
     }
 
     startTransition(async () => {
-      const result = await createPartyUpdate(partyId, token, content.trim());
+      const result = await createPartyUpdate({ partyId, token, content: content.trim() });
 
       if (result.success) {
         setContent("");

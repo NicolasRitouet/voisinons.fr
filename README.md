@@ -63,9 +63,20 @@ npx @keywaysh/cli pull -e development
 | Variable | Description | Requis |
 |----------|-------------|--------|
 | `DATABASE_URL` | URL de connexion PostgreSQL | Oui |
+| `BLOB_READ_WRITE_TOKEN` | Token Vercel Blob (images de couverture) | Oui |
 | `RESEND_API_KEY` | Clé API Resend pour les emails | Non |
-| `NEXT_PUBLIC_APP_URL` | URL de l'application | Non |
-| `UPLOADTHING_TOKEN` | Token UploadThing pour les images | Oui |
+| `NEXT_PUBLIC_APP_URL` | URL publique — surcharge le défaut par environnement | Non |
+| `CRON_SECRET` | Secret partagé du cron de purge RGPD | Oui en production |
+
+> **`NEXT_PUBLIC_APP_URL`** n'est nécessaire que pour surcharger le défaut.
+> Sans elle : `https://www.voisinons.fr` en production, l'URL du déploiement
+> sur un preview Vercel, `http://localhost:3000` en développement.
+
+> **`CRON_SECRET`** protège `/api/cron/purge`, qui applique la suppression des
+> données annoncée à J+30 dans la politique de confidentialité. Sans cette
+> variable l'endpoint refuse tous les appels et **la purge ne s'exécute jamais**.
+> Vercel envoie automatiquement `Authorization: Bearer $CRON_SECRET` sur les
+> crons déclarés dans `vercel.json`.
 
 5. Créer la base de données et appliquer le schéma :
 

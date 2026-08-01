@@ -9,7 +9,9 @@ if (dsn) {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
     sendDefaultPii: false,
     enableLogs: true,
-    includeLocalVariables: true,
+    // Off on purpose: server frames hold adminToken, editToken and participant
+    // PII, which would ship to Sentry despite sendDefaultPii: false.
+    includeLocalVariables: false,
     ignoreErrors: ["NEXT_NOT_FOUND", "NEXT_REDIRECT"],
   });
 }

@@ -3,7 +3,9 @@
 import { db } from "@/lib/db";
 import { participants, parties } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { generateToken } from "@/lib/crypto";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   sendParticipantEditEmail,
   sendOrganizerNewParticipantEmail,
@@ -15,6 +17,8 @@ import {
   type JoinPartyInput,
   type UpdateParticipantInput,
   type AdminUpdateOrganizerInput,
+  deleteParticipantSchema,
+  type DeleteParticipantInput,
 } from "@/lib/validations/participant";
 
 export async function joinParty(data: JoinPartyInput) {
@@ -113,6 +117,44 @@ export async function getParticipantByToken(editToken: string) {
   }
 }
 
+// RGPD right to erasure for a participant. Like updateParticipant, the
+// editToken is the only credential that proves ownership of the RSVP.
+export async function deleteParticipant(data: DeleteParticipantInput) {
+  const validated = deleteParticipantSchema.safeParse(data);
+
+  if (!validated.success) {
+    return { success: false as const, error: "Données invalides" };
+  }
+
+  try {
+    const [deleted] = await db
+      .delete(participants)
+      .where(eq(participants.editToken, validated.data.editToken))
+      .returning({ id: participants.id, partyId: participants.partyId });
+
+    if (!deleted) {
+      return { success: false as const, error: "Participant non trouvé" };
+    }
+
+    const party = await db.query.parties.findFirst({
+      where: eq(parties.id, deleted.partyId),
+      columns: { slug: true },
+    });
+    if (party) {
+      revalidatePath(`/${party.slug}`);
+      revalidatePath(`/${party.slug}/participer`);
+    }
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Failed to delete participant:", error);
+    return {
+      success: false as const,
+      error: "Une erreur est survenue lors de la suppression",
+    };
+  }
+}
+
 export async function updateParticipant(data: UpdateParticipantInput) {
   const validated = updateParticipantSchema.safeParse(data);
 
@@ -172,13 +214,7 @@ export async function adminUpdateOrganizerParticipant(
   const { partyId, token, name, email, phone, guestCount, bringing } =
     validated.data;
 
-  // Validate token inline - only update if the adminToken matches the party.
-  const party = await db.query.parties.findFirst({
-    where: eq(parties.id, partyId),
-    columns: { id: true, adminToken: true },
-  });
-
-  if (!party || party.adminToken !== token) {
+  if (!(await requireAdmin({ partyId }, token))) {
     return { success: false as const, error: "Non autorisé" };
   }
 

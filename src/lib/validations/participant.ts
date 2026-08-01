@@ -41,3 +41,9 @@ export const adminUpdateOrganizerSchema = z.object({
 });
 
 export type AdminUpdateOrganizerInput = z.infer<typeof adminUpdateOrganizerSchema>;
+
+export const deleteParticipantSchema = z.object({
+  editToken: z.string().min(10, "Token requis"),
+});
+
+export type DeleteParticipantInput = z.infer<typeof deleteParticipantSchema>;
