@@ -147,6 +147,9 @@ export function AddressAutocomplete({
       return;
     }
 
+    // Home/End are deliberately left alone: this combobox is editable, so they
+    // belong to the text cursor. Hijacking them for option navigation would
+    // stop a user from jumping to the start of the address they are correcting.
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
@@ -157,14 +160,6 @@ export function AddressAutocomplete({
       case "ArrowUp":
         e.preventDefault();
         setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-        break;
-      case "Home":
-        e.preventDefault();
-        setHighlightedIndex(0);
-        break;
-      case "End":
-        e.preventDefault();
-        setHighlightedIndex(suggestions.length - 1);
         break;
       case "Enter":
         e.preventDefault();

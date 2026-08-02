@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, createEvent, waitFor } from "@testing-library/react";
 import { AddressAutocomplete } from "./address-autocomplete";
 
 function apiFeature(name: string, postcode: string, city: string) {
@@ -101,22 +101,24 @@ describe("AddressAutocomplete accessibility", () => {
     expect(options[1]).toHaveAttribute("aria-selected", "false");
   });
 
-  it.each([
-    ["End", 2],
-    ["Home", 0],
-  ])("moves the active option with %s", async (key, expectedIndex) => {
-    renderCombobox();
-    await openSuggestions();
+  // In an editable combobox these belong to the text cursor. Intercepting them
+  // would stop a user from jumping to the start of the address being corrected.
+  it.each(["Home", "End"])(
+    "leaves %s to the text cursor instead of moving the active option",
+    async (key) => {
+      renderCombobox();
+      await openSuggestions();
 
-    fireEvent.keyDown(combobox(), { key: "ArrowDown" });
-    fireEvent.keyDown(combobox(), { key });
+      fireEvent.keyDown(combobox(), { key: "ArrowDown" });
+      const before = combobox().getAttribute("aria-activedescendant");
 
-    const options = screen.getAllByRole("option");
-    expect(combobox()).toHaveAttribute(
-      "aria-activedescendant",
-      options[expectedIndex].id
-    );
-  });
+      const event = createEvent.keyDown(combobox(), { key });
+      fireEvent(combobox(), event);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(combobox()).toHaveAttribute("aria-activedescendant", before!);
+    }
+  );
 
   it("selects the highlighted address on Enter", async () => {
     const onSelect = vi.fn();
