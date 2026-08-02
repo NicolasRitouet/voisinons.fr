@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,13 @@ export function AddressAutocomplete({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const justSelected = useRef(false);
+
+  const listboxId = useId();
+  const optionId = (index: number) => `${listboxId}-option-${index}`;
+  const activeOptionId =
+    isOpen && highlightedIndex >= 0 ? optionId(highlightedIndex) : undefined;
 
   // Fetch suggestions from API
   useEffect(() => {
@@ -101,6 +107,15 @@ export function AddressAutocomplete({
     return () => clearTimeout(timer);
   }, [value]);
 
+  // aria-activedescendant moves focus virtually, so the browser won't scroll
+  // the highlighted option into view on its own.
+  useEffect(() => {
+    if (highlightedIndex < 0) return;
+    listRef.current
+      ?.querySelector(`[data-index="${highlightedIndex}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -122,8 +137,19 @@ export function AddressAutocomplete({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) return;
+    // ArrowDown re-opens a list closed with Escape, per the ARIA combobox pattern.
+    if (!isOpen) {
+      if (e.key === "ArrowDown" && suggestions.length > 0) {
+        e.preventDefault();
+        setIsOpen(true);
+        setHighlightedIndex(0);
+      }
+      return;
+    }
 
+    // Home/End are deliberately left alone: this combobox is editable, so they
+    // belong to the text cursor. Hijacking them for option navigation would
+    // stop a user from jumping to the start of the address they are correcting.
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
@@ -143,6 +169,7 @@ export function AddressAutocomplete({
         break;
       case "Escape":
         setIsOpen(false);
+        setHighlightedIndex(-1);
         break;
     }
   };
@@ -159,20 +186,49 @@ export function AddressAutocomplete({
         placeholder={placeholder}
         className={className}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={isOpen && suggestions.length > 0}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={activeOptionId}
+        aria-busy={isLoading || undefined}
       />
 
       {isLoading && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
           <div className="w-4 h-4 border-2 border-gray-300 border-t-neighbor-orange rounded-full animate-spin" />
         </div>
       )}
 
+      {/* Without this, a screen reader user gets no signal that suggestions
+          appeared: aria-expanded alone is only read when focus moves. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {isOpen && suggestions.length > 0
+          ? `${suggestions.length} adresse${suggestions.length > 1 ? "s" : ""} proposée${suggestions.length > 1 ? "s" : ""}. Utilisez les flèches pour parcourir, Entrée pour choisir.`
+          : ""}
+      </div>
+
       {isOpen && suggestions.length > 0 && (
-        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 sm:max-h-60 overflow-auto">
+        <ul
+          ref={listRef}
+          id={listboxId}
+          role="listbox"
+          aria-label="Adresses proposées"
+          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 sm:max-h-60 overflow-auto"
+        >
           {suggestions.map((suggestion, index) => (
             <li
               key={`${suggestion.label}-${index}`}
-              onClick={() => handleSelect(suggestion)}
+              id={optionId(index)}
+              role="option"
+              aria-selected={highlightedIndex === index}
+              data-index={index}
+              // Selecting on mousedown keeps the click from blurring the input
+              // first, which would close the list before onClick could fire.
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSelect(suggestion);
+              }}
               onMouseEnter={() => setHighlightedIndex(index)}
               className={cn(
                 "px-3 py-3 cursor-pointer text-sm",

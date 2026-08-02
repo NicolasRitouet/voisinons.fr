@@ -39,6 +39,13 @@ function installInMemoryLocalStorage() {
 
 installInMemoryLocalStorage();
 
+// jsdom implements no layout, so it ships no scrollIntoView. Components that
+// keep an active option visible would throw instead of being testable.
+// Guarded because this setup file also runs for node-environment test files.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 // lib/env validates on import and throws when a required variable is missing —
 // deliberately, so a misconfigured runtime fails loudly. Give the suite a valid
 // baseline; tests that care about resolution call resolveEnv() directly.
