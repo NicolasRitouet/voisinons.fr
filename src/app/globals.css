@@ -192,6 +192,59 @@
   opacity: 0.6;
 }
 
+/* French enamel street plate (404 page). The double inset frame and the domed
+   rivets are what make it read as a real plaque rather than a coloured box. */
+.street-plate {
+  position: relative;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #33697d 0%, #264653 48%, #1b333d 100%);
+  box-shadow:
+    inset 0 0 0 4px #264653,
+    inset 0 0 0 6px #F9F8F2,
+    inset 0 0 0 10px #264653,
+    inset 0 2px 6px rgba(255, 255, 255, 0.18),
+    0 20px 45px -14px rgba(38, 70, 83, 0.55);
+}
+
+.street-plate-tilt {
+  transform: rotate(-1.5deg);
+  transition: transform 0.5s cubic-bezier(0.5, 0, 0, 1);
+}
+
+.street-plate-tilt:hover {
+  transform: rotate(0deg);
+}
+
+.street-rivet {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 32% 28%, #f4f2e9, #9aa6a2 65%, #5d6b6e);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.street-rivet--tl { top: 9px; left: 9px; }
+.street-rivet--tr { top: 9px; right: 9px; }
+.street-rivet--bl { bottom: 9px; left: 9px; }
+.street-rivet--br { bottom: 9px; right: 9px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .street-plate-tilt,
+  .street-plate-tilt:hover {
+    transition: none;
+  }
+  /* Land the reveal instantly rather than sliding — never disable it outright,
+     the element would stay stuck at opacity 0. */
+  .reveal {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
+  .animate-marquee {
+    animation: none;
+  }
+}
+
 /* Selection styling */
 ::selection {
   background-color: #EB5E28;
