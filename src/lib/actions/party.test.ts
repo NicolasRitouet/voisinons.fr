@@ -589,9 +589,6 @@ describe("getPartyBySlug query shape", () => {
 
 
 describe("getPartyForAdmin query shape", () => {
-  // The dashboard renders client components, so everything this query selects
-  // reaches the browser. It needs contact details, never the editToken: that
-  // token alone authorizes updateParticipant and deleteParticipant.
   let findFirstMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {

@@ -40,10 +40,6 @@ export type PublicParticipant = Pick<
   keyof typeof publicParticipantColumns
 >;
 
-// Admin read-model: the dashboard needs contact details to reach participants,
-// but never their editToken. That token is the sole credential authorizing
-// updateParticipant and deleteParticipant, and everything selected here is
-// serialized into the RSC payload of a page that renders client components.
 export const adminParticipantColumns = {
   ...publicParticipantColumns,
   email: true,
