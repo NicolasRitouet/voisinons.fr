@@ -58,3 +58,9 @@ playwright/.cache/
 .dolt/
 *.db
 .beads-credential-key
+
+# Ce projet est en npm (package-lock.json, et npm ci en CI). Commiter un
+# lockfile pnpm ferait basculer Vercel sur pnpm pendant que la CI reste en npm.
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.deepsec/
