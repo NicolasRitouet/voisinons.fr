@@ -272,7 +272,7 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                       {party.participants.map((participant) => (
                         <div
                           key={participant.id}
-                          className="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-5 gap-3 text-sm"
+                          className="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-6 gap-3 text-sm"
                         >
                           <div className="md:col-span-1">
                             <p className="text-gray-500">Nom</p>
@@ -310,14 +310,12 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                             </p>
                           </div>
                           {!participant.isOrganizer && (
-                            <div className="md:col-span-5 flex justify-end border-t border-gray-200 pt-3">
-                              <AdminDeleteParticipant
-                                partyId={party.id}
-                                participantId={participant.id}
-                                participantName={participant.name}
-                                token={token}
-                              />
-                            </div>
+                            <AdminDeleteParticipant
+                              partyId={party.id}
+                              participantId={participant.id}
+                              participantName={participant.name}
+                              token={token}
+                            />
                           )}
                         </div>
                       ))}

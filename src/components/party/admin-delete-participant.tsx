@@ -84,9 +84,12 @@ export function AdminDeleteParticipant({
         size="sm"
         onClick={() => setConfirming(true)}
         aria-label={`Supprimer l'inscription de ${participantName}`}
-        // hover:text-* is required: the outline variant's own
+        // Placement classes live here rather than on a wrapper: the component
+        // is a direct grid child, so it can sit in the row's last column when
+        // collapsed and span the full width once the panel opens.
+        // hover:text-* is required too: the outline variant's own
         // hover:text-accent-foreground is white and would hide the label.
-        className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+        className="self-center md:justify-self-end border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
       >
         Supprimer
       </Button>
@@ -99,7 +102,7 @@ export function AdminDeleteParticipant({
       tabIndex={-1}
       role="group"
       aria-labelledby={messageId}
-      className="max-w-md space-y-3 rounded-lg border border-red-200 bg-red-50 p-3"
+      className="md:col-span-6 md:justify-self-end max-w-md space-y-3 rounded-lg border border-red-200 bg-red-50 p-3"
     >
       <p id={messageId} className="text-sm text-red-900">
         Supprimer l&apos;inscription de <strong>{participantName}</strong> ? Les
