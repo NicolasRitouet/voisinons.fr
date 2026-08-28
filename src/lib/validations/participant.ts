@@ -47,3 +47,19 @@ export const deleteParticipantSchema = z.object({
 });
 
 export type DeleteParticipantInput = z.infer<typeof deleteParticipantSchema>;
+
+// Lets the organizer remove someone else's RSVP from the admin dashboard.
+// Unlike deleteParticipantSchema, authorization comes from the party's
+// adminToken: the participantId is just a row selector, not a credential, and
+// the action scopes the delete to the party server-side.
+export const adminDeleteParticipantSchema = z.object({
+  // Messages in French: the action hands issues[0].message straight to the
+  // admin UI, and Zod's own default would surface as "Invalid UUID".
+  partyId: z.uuid("Fête invalide"),
+  participantId: z.uuid("Participant invalide"),
+  token: z.string().min(10, "Token requis"),
+});
+
+export type AdminDeleteParticipantInput = z.infer<
+  typeof adminDeleteParticipantSchema
+>;

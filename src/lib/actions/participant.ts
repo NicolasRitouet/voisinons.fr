@@ -19,6 +19,8 @@ import {
   type AdminUpdateOrganizerInput,
   deleteParticipantSchema,
   type DeleteParticipantInput,
+  adminDeleteParticipantSchema,
+  type AdminDeleteParticipantInput,
 } from "@/lib/validations/participant";
 
 export async function joinParty(data: JoinPartyInput) {
@@ -245,4 +247,71 @@ export async function adminUpdateOrganizerParticipant(
       error: "Une erreur est survenue lors de la mise à jour",
     };
   }
+}
+
+// Remove someone else's RSVP from the admin dashboard. Authorized by the
+// party's adminToken, and the WHERE clause carries the guarantees: partyId so
+// an organizer can never reach another party's row, and isOrganizer = false so
+// the organizer's own row -- the anchor adminUpdateOrganizerParticipant relies
+// on -- can't be deleted from here.
+export async function adminDeleteParticipant(
+  data: AdminDeleteParticipantInput
+) {
+  const validated = adminDeleteParticipantSchema.safeParse(data);
+
+  if (!validated.success) {
+    return {
+      success: false as const,
+      error: validated.error.issues[0]?.message || "Données invalides",
+    };
+  }
+
+  const { partyId, participantId, token } = validated.data;
+
+  let slug: string;
+
+  // requireAdmin hits the database, so it belongs inside the try: an error
+  // thrown out of a Server Action reaches the global error boundary and wipes
+  // the dashboard instead of surfacing here.
+  try {
+    const party = await requireAdmin({ partyId }, token);
+
+    if (!party) {
+      return { success: false as const, error: "Non autorisé" };
+    }
+
+    slug = party.slug;
+
+    const [deleted] = await db
+      .delete(participants)
+      .where(
+        and(
+          eq(participants.id, participantId),
+          eq(participants.partyId, partyId),
+          eq(participants.isOrganizer, false)
+        )
+      )
+      .returning({ id: participants.id });
+
+    if (!deleted) {
+      return { success: false as const, error: "Participant non trouvé" };
+    }
+  } catch (error) {
+    console.error("Failed to delete participant as admin:", error);
+    return {
+      success: false as const,
+      error: "Une erreur est survenue lors de la suppression",
+    };
+  }
+
+  // The row is gone for good past this point, so a revalidation failure must
+  // never surface as a failed deletion.
+  try {
+    revalidatePath(`/${slug}`);
+    revalidatePath(`/${slug}/participer`);
+  } catch (error) {
+    console.error("Failed to revalidate after participant deletion:", error);
+  }
+
+  return { success: true as const };
 }
