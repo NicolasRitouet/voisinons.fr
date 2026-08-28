@@ -17,6 +17,7 @@ import { AdminChannelForm } from "@/components/party/admin-channel-form";
 import { AdminChannelList } from "@/components/party/admin-channel-list";
 import { AdminNeeds } from "@/components/party/admin-needs";
 import { AdminOrganizerEdit } from "@/components/party/admin-organizer-edit";
+import { AdminDeleteParticipant } from "@/components/party/admin-delete-participant";
 import { AdminDeletePartyForm } from "@/components/party/admin-delete-party";
 import { RETENTION_DAYS } from "@/lib/retention";
 import { SITE_URL } from "@/lib/site";
@@ -271,7 +272,7 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                       {party.participants.map((participant) => (
                         <div
                           key={participant.id}
-                          className="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-5 gap-3 text-sm"
+                          className="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-6 gap-3 text-sm"
                         >
                           <div className="md:col-span-1">
                             <p className="text-gray-500">Nom</p>
@@ -308,6 +309,14 @@ export default async function AdminPage({ params, searchParams }: AdminPageProps
                               {participant.bringing || "—"}
                             </p>
                           </div>
+                          {!participant.isOrganizer && (
+                            <AdminDeleteParticipant
+                              partyId={party.id}
+                              participantId={participant.id}
+                              participantName={participant.name}
+                              token={token}
+                            />
+                          )}
                         </div>
                       ))}
                     </div>

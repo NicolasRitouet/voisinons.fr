@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
     insert: vi.fn(),
     select: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
     query: {
       parties: {
         findFirst: vi.fn(),
@@ -18,6 +19,11 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/email", () => ({
   sendParticipantEditEmail: vi.fn().mockResolvedValue(undefined),
   sendOrganizerNewParticipantEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+// revalidatePath is not available outside a request scope
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
 }));
 
 // Mock crypto utility
@@ -35,6 +41,7 @@ import {
   getParticipantByToken,
   updateParticipant,
   adminUpdateOrganizerParticipant,
+  adminDeleteParticipant,
 } from "./participant";
 
 describe("participant actions", () => {
@@ -384,6 +391,89 @@ describe("participant actions", () => {
       (db.update as ReturnType<typeof vi.fn>).mockImplementation(mockUpdate);
 
       const result = await adminUpdateOrganizerParticipant(validInput);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("non trouvé");
+    });
+  });
+
+  describe("adminDeleteParticipant", () => {
+    const validInput = {
+      partyId: mockParty.id,
+      participantId: mockParticipant.id,
+      token: mockParty.adminToken,
+    };
+
+    it("should reject invalid data before touching the database", async () => {
+      const result = await adminDeleteParticipant({
+        ...validInput,
+        participantId: "not-a-uuid",
+      });
+
+      expect(result.success).toBe(false);
+      expect(db.query.parties.findFirst).not.toHaveBeenCalled();
+    });
+
+    it("should reject when the admin token does not match", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: mockParty.id,
+        slug: mockParty.slug,
+        adminToken: "the-real-token",
+      });
+
+      const result = await adminDeleteParticipant({
+        ...validInput,
+        token: "wrong-token-1234567890",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Non autorisé");
+      expect(db.delete).not.toHaveBeenCalled();
+    });
+
+    it("should delete the row scoped to id + partyId + non-organizer", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: mockParty.id,
+        slug: mockParty.slug,
+        adminToken: mockParty.adminToken,
+      });
+      const mockWhere = vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: mockParticipant.id }]),
+      });
+      (db.delete as ReturnType<typeof vi.fn>).mockReturnValue({
+        where: mockWhere,
+      });
+
+      const result = await adminDeleteParticipant(validInput);
+
+      expect(result.success).toBe(true);
+      // The WHERE assertion below says nothing about the table, so without
+      // this a delete(parties) would pass and cascade the whole party away.
+      expect(db.delete).toHaveBeenCalledWith(participants);
+      // partyId keeps an organizer from reaching another party's row, and
+      // isOrganizer = false keeps them from deleting their own anchor row.
+      expect(mockWhere).toHaveBeenCalledWith(
+        and(
+          eq(participants.id, mockParticipant.id),
+          eq(participants.partyId, mockParty.id),
+          eq(participants.isOrganizer, false)
+        )
+      );
+    });
+
+    it("should return error when no matching row is found", async () => {
+      (db.query.parties.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: mockParty.id,
+        slug: mockParty.slug,
+        adminToken: mockParty.adminToken,
+      });
+      (db.delete as ReturnType<typeof vi.fn>).mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+        }),
+      });
+
+      const result = await adminDeleteParticipant(validInput);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("non trouvé");
