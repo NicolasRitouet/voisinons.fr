@@ -43,10 +43,12 @@ import {
   createDiscussionChannel,
   updatePartyDetails,
   getPartyBySlug,
+  getPartyForAdmin,
 } from "./party";
 import {
   publicPartyColumns,
   publicParticipantColumns,
+  adminParticipantColumns,
 } from "./party-public-columns";
 import { parties, participants } from "@/lib/db/schema";
 
@@ -576,6 +578,59 @@ describe("getPartyBySlug query shape", () => {
 
   it("never resolves a participant relation as `true` (which would fetch every column)", async () => {
     await getPartyBySlug("query-shape-test-slug-no-true");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.participants).not.toBe(true);
+    expect(callArg.with.needs.with.contributions.with.participant).not.toBe(
+      true
+    );
+  });
+});
+
+
+describe("getPartyForAdmin query shape", () => {
+  let findFirstMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    findFirstMock = db.query.parties.findFirst as ReturnType<typeof vi.fn>;
+    findFirstMock.mockResolvedValue(null);
+  });
+
+  it("adminParticipantColumns excludes the editToken credential", () => {
+    expect(adminParticipantColumns).not.toHaveProperty("editToken");
+  });
+
+  it("adminParticipantColumns keeps the contact details the dashboard needs", () => {
+    expect(adminParticipantColumns).toHaveProperty("email");
+    expect(adminParticipantColumns).toHaveProperty("phone");
+  });
+
+  it("adminParticipantColumns references only real columns on the participants table", () => {
+    const realColumns = Object.keys(participants);
+    for (const col of Object.keys(adminParticipantColumns)) {
+      expect(realColumns).toContain(col);
+    }
+  });
+
+  it("restricts the participants relation to adminParticipantColumns", async () => {
+    await getPartyForAdmin("admin-query-shape-slug", "some-admin-token");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.participants.columns).toBe(adminParticipantColumns);
+  });
+
+  it("restricts the nested contribution participant to publicParticipantColumns", async () => {
+    await getPartyForAdmin("admin-query-shape-nested", "some-admin-token");
+
+    const callArg = findFirstMock.mock.calls[0][0];
+    expect(callArg.with.needs.with.contributions.with.participant.columns).toBe(
+      publicParticipantColumns
+    );
+  });
+
+  it("never resolves a participant relation as `true` (which would fetch every column)", async () => {
+    await getPartyForAdmin("admin-query-shape-no-true", "some-admin-token");
 
     const callArg = findFirstMock.mock.calls[0][0];
     expect(callArg.with.participants).not.toBe(true);

@@ -39,3 +39,14 @@ export type PublicParticipant = Pick<
   Participant,
   keyof typeof publicParticipantColumns
 >;
+
+export const adminParticipantColumns = {
+  ...publicParticipantColumns,
+  email: true,
+  phone: true,
+} as const;
+
+export type AdminParticipant = Pick<
+  Participant,
+  keyof typeof adminParticipantColumns
+>;

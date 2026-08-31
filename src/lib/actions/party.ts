@@ -33,6 +33,7 @@ import { isAdminToken, requireAdmin } from "@/lib/auth/require-admin";
 import {
   publicPartyColumns,
   publicParticipantColumns,
+  adminParticipantColumns,
 } from "./party-public-columns";
 
 const VERCEL_BLOB_HOST = ".public.blob.vercel-storage.com";
@@ -195,13 +196,13 @@ export async function getPartyForAdmin(slug: string, token: string) {
   const party = await db.query.parties.findFirst({
     where: eq(parties.slug, slug),
     with: {
-      participants: true,
+      participants: { columns: adminParticipantColumns },
       needs: {
         orderBy: (needs, { asc }) => [asc(needs.createdAt)],
         with: {
           contributions: {
             with: {
-              participant: true,
+              participant: { columns: publicParticipantColumns },
             },
           },
         },
