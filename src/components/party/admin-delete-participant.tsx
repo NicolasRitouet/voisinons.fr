@@ -102,6 +102,12 @@ export function AdminDeleteParticipant({
       tabIndex={-1}
       role="group"
       aria-labelledby={messageId}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          reset();
+        }
+      }}
       className="md:col-span-6 md:justify-self-end max-w-md space-y-3 rounded-lg border border-red-200 bg-red-50 p-3"
     >
       <p id={messageId} className="text-sm text-red-900">
